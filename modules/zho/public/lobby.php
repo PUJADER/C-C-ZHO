@@ -1,16 +1,17 @@
 <?php
-// modules/zho/public/lobby.php
-require_once '../../../mainfile.php';
-require_once XOOPS_ROOT_PATH . '/header.php';
 ?>
-<h1>Lobby ZHO</h1>
-<p>Créer ou rejoindre une salle pour démarrer une partie.</p>
-
-<div>
-  <a href="room.php">Ouvrir le lobby live</a>
-  <span> | </span>
-  <a href="leaderboard.php">Voir le classement</a>
-</div>
-
-<?php
-require_once XOOPS_ROOT_PATH . '/footer.php';
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Lobby ZHO</title>
+</head>
+<body>
+  <h1>Lobby ZHO</h1>
+  <p>Créer une salle, rejoindre une partie et lancer la room.</p>
+  <ul>
+    <li><a href="room.php">Ouvrir la room live</a></li>
+    <li><a href="leaderboard.php">Voir le classement</a></li>
+    <li><a href="index.php">Retour</a></li>
+  </ul>
+</body>
+</html>

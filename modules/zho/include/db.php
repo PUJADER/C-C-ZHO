@@ -1,10 +1,16 @@
 <?php
-// modules/zho/include/db.php
-// Fichiers de connexion / accès DB - version NPDS-style.
-function zho_db_connect() {
-  $dbFile = XOOPS_ROOT_PATH . '/modules/zho/data/leaderboard.sqlite';
-  if (!file_exists($dbFile)) {
-    return null;
-  }
-  return new PDO('sqlite:' . $dbFile);
+function zho_db_connect()
+{
+    $dbFile = dirname(__FILE__) . '/../data/leaderboard.sqlite';
+
+    if (!file_exists($dbFile)) {
+        return null;
+    }
+
+    try {
+        $pdo = new PDO('sqlite:' . $dbFile);
+        return $pdo;
+    } catch (Exception $e) {
+        return null;
+    }
 }

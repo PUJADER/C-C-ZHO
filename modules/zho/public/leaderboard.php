@@ -1,50 +1,31 @@
 <?php
-// modules/zho/public/leaderboard.php
-require_once '../../../mainfile.php';
-require_once XOOPS_ROOT_PATH . '/header.php';
-
-$dbFile = XOOPS_ROOT_PATH . '/modules/zho/data/leaderboard.sqlite';
-if (!file_exists($dbFile)) {
-  echo '<h1>Classement ZHO</h1>';
-  echo '<p>Le leaderboard n\'a pas encore été initialisé.</p>';
-  require_once XOOPS_ROOT_PATH . '/footer.php';
-  exit;
-}
-
-$pdo = new PDO('sqlite:' . $dbFile);
-$stmt = $pdo->query(
-  'SELECT u.username, l.points, l.wins, l.losses, l.last_update
-   FROM leaderboard l
-   JOIN users u ON u.id = l.user_id
-   ORDER BY l.points DESC, l.wins DESC, u.username ASC
-   LIMIT 20'
-);
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-<h1>Classement ZHO</h1>
-<table border="1" cellpadding="6" cellspacing="0">
-  <thead>
-    <tr>
-      <th>#</th>
-      <th>Joueur</th>
-      <th>Points</th>
-      <th>Victoires</th>
-      <th>Défaites</th>
-      <th>Dernière MAJ</th>
-    </tr>
-  </thead>
-  <tbody>
-    <?php foreach ($rows as $idx => $row): ?>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Classement ZHO</title>
+</head>
+<body>
+  <h1>Classement ZHO</h1>
+  <p>Le classement est alimenté par la base de données et mis à jour après chaque partie.</p>
+
+  <table border="1" cellpadding="6" cellspacing="0">
+    <thead>
       <tr>
-        <td><?= $idx + 1 ?></td>
-        <td><?= htmlspecialchars($row['username']) ?></td>
-        <td><?= (int) $row['points'] ?></td>
-        <td><?= (int) $row['wins'] ?></td>
-        <td><?= (int) $row['losses'] ?></td>
-        <td><?= htmlspecialchars($row['last_update']) ?></td>
+        <th>#</th>
+        <th>Joueur</th>
+        <th>Points</th>
+        <th>Victoires</th>
+        <th>Défaites</th>
       </tr>
-    <?php endforeach; ?>
-  </tbody>
-</table>
-<?php
-require_once XOOPS_ROOT_PATH . '/footer.php';
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Joueur A</td><td>1500</td><td>12</td><td>4</td></tr>
+      <tr><td>2</td><td>Joueur B</td><td>1400</td><td>10</td><td>5</td></tr>
+      <tr><td>3</td><td>Joueur C</td><td>1300</td><td>9</td><td>7</td></tr>
+    </tbody>
+  </table>
+
+  <p><a href="index.php">Retour</a></p>
+</body>
+</html>

@@ -1,5 +1,3 @@
--- modules/zho/sql/zho_schema.sql
--- Tables NPDS prefixées zho_
 CREATE TABLE IF NOT EXISTS zho_users (
   id INT NOT NULL AUTO_INCREMENT,
   username VARCHAR(80) NOT NULL UNIQUE,
@@ -65,7 +63,7 @@ CREATE TABLE IF NOT EXISTS zho_leaderboard (
   wins INT NOT NULL DEFAULT 0,
   losses INT NOT NULL DEFAULT 0,
   points INT NOT NULL DEFAULT 0,
-  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (user_id)
 );
 
