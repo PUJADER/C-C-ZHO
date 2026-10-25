@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "test:ini": "node tools/test-ini.mjs",
-    "serve": "node server/dev-server.js"
+    "serve": "node server/dev-server.js",
+    "build:registry": "node server/parser/build-registry.mjs",
+    "serve:api": "node server/api/index.js"
   },
   "dependencies": {
     "ws": "^8.22.0"
