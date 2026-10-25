@@ -1,0 +1,13 @@
+{
+  "name": "zh-online",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ini": "node tools/test-ini.mjs",
+    "serve": "node server/dev-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.22.0"
+  }
+}

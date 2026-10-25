@@ -1,0 +1,395 @@
+:root {
+  --bg-panel: rgba(12, 18, 26, 0.82);
+  --panel-border: #38536e;
+  --button-bg: #182533;
+  --panel-radius: 6px;
+  --accent-cyan: #00f0ff;
+  --accent-gold: #ffd75a;
+  --accent-green: #5cd68a;
+  --accent-red: #ff5555;
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: #0d1117;
+  color: #dfe6ee;
+  font: 13px/1.4 var(--font-family);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Custom Scrollbar for HUD */
+#hud-content::-webkit-scrollbar {
+  width: 5px;
+}
+#hud-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+#hud-content::-webkit-scrollbar-thumb {
+  background: #36506a;
+  border-radius: 3px;
+}
+#hud-content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-cyan);
+}
+
+/* --- HUD STYLING --- */
+#hud {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  z-index: 10;
+  width: 360px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--panel-border);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 240, 255, 0.08);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* HUD Header / Toggle Bar */
+#hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: rgba(18, 28, 40, 0.9);
+  border-bottom: 1px solid rgba(56, 83, 110, 0.4);
+  cursor: pointer;
+}
+
+#hud-header .title-zone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#hud-header .title-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  background: rgba(0, 240, 255, 0.15);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+#hud-header .title-text {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: #f0f6fc;
+}
+
+#hud-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #8b949e;
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#hud-header:hover #hud-toggle-btn {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: var(--accent-cyan);
+  color: #fff;
+}
+
+#hud-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  transition: transform 0.35s ease;
+}
+
+/* Summary Row displayed when minimized */
+#hud-mini-summary {
+  display: none;
+  padding: 8px 14px;
+  background: rgba(10, 15, 22, 0.6);
+  gap: 16px;
+  font-size: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#hud-mini-summary .mini-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+/* HUD Content Collapsible Container */
+#hud-content {
+  max-height: 80vh;
+  opacity: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  transition: max-height 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+              opacity 0.25s ease, 
+              padding 0.35s ease;
+}
+
+/* Retracted State */
+#hud.collapsed #hud-content {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+#hud.collapsed #hud-toggle-btn svg {
+  transform: rotate(180deg);
+}
+
+#hud.collapsed #hud-mini-summary {
+  display: flex;
+}
+
+/* Styling Form Inputs & Elements inside HUD */
+#hud input[type=text], #hud select {
+  background: #16222e;
+  border: 1px solid #36506a;
+  color: #dfe6ee;
+  padding: 6px 8px;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-size: 12px;
+}
+
+#hud input[type=text]:focus, #hud select:focus {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 5px rgba(0, 240, 255, 0.3);
+}
+
+#hud button {
+  background: #1f3347;
+  border: 1px solid #4a6a88;
+  color: #f0f6fc;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+#hud button:hover {
+  background: #2b4764;
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+}
+
+#hud .row {
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+#status {
+  font-weight: 600;
+  color: #a3b8cc;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 6px var(--accent-cyan);
+}
+
+#money {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-gold);
+  margin-top: 6px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 10px rgba(255, 215, 90, 0.2);
+}
+
+#energy {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 4px;
+  color: #8fd0ff;
+}
+#energy.low {
+  color: var(--accent-red);
+  text-shadow: 0 0 8px rgba(255, 85, 85, 0.4);
+}
+
+#help {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#help b {
+  color: #cbd5e1;
+}
+
+#msg {
+  color: #ffb070;
+  min-height: 1.2em;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+#players {
+  font-size: 12px;
+  margin-top: 6px;
+  line-height: 1.6;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+#lobby, #dev {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* --- EXISTING GAME INTERFACE ELEMENTS --- */
+#box { 
+  position: fixed; 
+  border: 1px solid var(--accent-cyan); 
+  background: rgba(0, 240, 255, 0.15); 
+  display: none; 
+  z-index: 1; 
+  pointer-events: none; 
+}
+
+/* PANNEAU CMD MODIFIABLE */
+#cmd {
+  position: absolute; /* Remplacé fixed par absolute pour rendre le resize effectif */
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  z-index: 2;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+
+  /* Physique de redimensionnement de la fenêtre */
+  resize: both;
+  overflow: hidden;
+  width: 780px;  /* Ta taille par défaut approximative */
+  height: 180px; 
+  min-width: 140px;
+  min-height: 45px;
+}
+#cmd > * { pointer-events: auto; }
+
+/* Entête commune (.panel-handle ou .head) */
+#cmd .panel-handle, #cmd .head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  background: var(--bg-panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  padding: 6px 12px;
+  font-size: 12px;
+}
+#cmd .head b, #cmd .panel-handle b { font-size: 13px; color: var(--accent-cyan); }
+#cmd .head .hp, #cmd .panel-handle .hp { margin-left: auto; opacity: .85; font-weight: 600; }
+
+#cmd .queue {
+  display: flex;
+  gap: 4px;
+  min-height: 34px;
+  background: var(--bg-panel);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  padding: 4px;
+}
+#cmd .queue:empty { display: none; }
+
+#cmd .qi {
+  position: relative;
+  width: 92px;
+  height: 34px;
+  border: 1px solid #4a6a88;
+  border-radius: 4px;
+  background: #1d2a36;
+  overflow: hidden;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 34px;
+  text-align: center;
+  color: #dfe6ee;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+#cmd .qi:hover { border-color: var(--accent-red); }
+#cmd .qi i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--accent-green); }
+#cmd .qi.up { border-color: var(--accent-gold); }
+
+/* GRILLE RESTAURÉE & DYNAMIQUE VERTICALE */
+#cmd .grid {
+  flex: 1;
+  display: grid;
+  background: var(--bg-panel);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--panel-radius);
+  padding: 6px;
+  gap: 5px;
+
+  /* Rétablissement strict de ton design d'origine */
+  grid-auto-columns: 108px;
+  grid-auto-rows: 58px;
+
+  /* Le secret du basculement en hauteur */
+  grid-auto-flow: column;
+  grid-template-rows: repeat(auto-fill, minmax(58px, 1fr));
+  
+  overflow-x: auto;
+}
+#cmd .grid > i { visibility: hidden; }
+
+/* ÉTAT SÉCURITÉ DE COLLAPSE (SI TU APPLIQUES LA CLASSE PAR JS) */
+#cmd.is-collapsed {
+  height: 38px !important;
+  min-height: 38px !important;
+  resize: horizontal;
+}
+#cmd.is-collapsed .queue, #cmd.is-collapsed .grid {
+  display: none !important;
+}
