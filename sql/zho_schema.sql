@@ -1,75 +1,61 @@
--- sql/zho_schema.sql
+<?php
+// SQL de base pour le bon fonctionnement du jeu ZHO
+// Tables prefixées zho_
+
 CREATE TABLE IF NOT EXISTS zho_users (
-  id INT NOT NULL AUTO_INCREMENT,
-  username VARCHAR(80) NOT NULL UNIQUE,
-  role VARCHAR(20) DEFAULT 'user',
-  status VARCHAR(20) DEFAULT 'active',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS zho_rooms (
-  id VARCHAR(64) NOT NULL,
-  name VARCHAR(100) NOT NULL,
-  host_id INT NOT NULL,
-  map_id VARCHAR(64) DEFAULT NULL,
-  status ENUM('lobby','playing','finished') DEFAULT 'lobby',
-  max_players INT DEFAULT 8,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  host_id TEXT NOT NULL,
+  map_id TEXT DEFAULT NULL,
+  status TEXT NOT NULL DEFAULT 'lobby',
+  max_players INTEGER NOT NULL DEFAULT 8,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS zho_room_members (
-  id INT NOT NULL AUTO_INCREMENT,
-  room_id VARCHAR(64) NOT NULL,
-  user_id INT NOT NULL,
-  ready TINYINT(1) DEFAULT 0,
-  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE(room_id, user_id),
-  PRIMARY KEY (id)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
+  ready INTEGER NOT NULL DEFAULT 0,
+  joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(room_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS zho_room_messages (
-  id INT NOT NULL AUTO_INCREMENT,
-  room_id VARCHAR(64) NOT NULL,
-  user_id INT NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
   message TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
-);
-
-CREATE TABLE IF NOT EXISTS zho_reports (
-  id INT NOT NULL AUTO_INCREMENT,
-  room_id VARCHAR(64) NOT NULL,
-  user_id INT NOT NULL,
-  reporter_user_id INT NOT NULL,
-  reason TEXT NOT NULL,
-  resolved TINYINT(1) DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS zho_matches (
-  id INT NOT NULL AUTO_INCREMENT,
-  room_id VARCHAR(64) NOT NULL,
-  winner_user_id INT DEFAULT NULL,
-  map_id VARCHAR(64) NOT NULL,
-  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  ended_at TIMESTAMP NULL,
-  PRIMARY KEY (id)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_id TEXT NOT NULL,
+  winner_user_id TEXT DEFAULT NULL,
+  map_id TEXT NOT NULL,
+  started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ended_at TEXT DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS zho_leaderboard (
-  user_id INT NOT NULL,
-  wins INT NOT NULL DEFAULT 0,
-  losses INT NOT NULL DEFAULT 0,
-  points INT NOT NULL DEFAULT 0,
-  last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (user_id)
+  user_id TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  wins INTEGER NOT NULL DEFAULT 0,
+  losses INTEGER NOT NULL DEFAULT 0,
+  points INTEGER NOT NULL DEFAULT 0,
+  last_update TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS zho_settings (
-  key_name VARCHAR(100) NOT NULL,
-  key_value TEXT NOT NULL,
-  PRIMARY KEY (key_name)
+  key_name TEXT PRIMARY KEY,
+  key_value TEXT NOT NULL
 );
