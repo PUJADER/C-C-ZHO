@@ -6,6 +6,7 @@
   "scripts": {
     "test:ini": "node tools/test-ini.mjs",
     "serve": "node server/dev-server.js",
+    "serve:rooms": "node server/ws-server.js",
     "build:registry": "node server/parser/build-registry.mjs",
     "serve:api": "node server/api/index.js"
   },
