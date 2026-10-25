@@ -1,8 +1,7 @@
 <?php
 // modules/zho/index.php
+// Point d'entrée public du module NPDS.
 require_once '../../mainfile.php';
-require_once XOOPS_ROOT_PATH . '/header.php';
 
-header('Location: ' . XOOPS_URL . '/modules/zho/public/lobby.php');
-
-require_once XOOPS_ROOT_PATH . '/footer.php';
+header('Location: ' . XOOPS_URL . '/modules/zho/public/index.php');
+exit;

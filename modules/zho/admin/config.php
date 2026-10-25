@@ -4,6 +4,11 @@ require_once '../../../mainfile.php';
 require_once XOOPS_ROOT_PATH . '/header.php';
 ?>
 <h1>Configuration ZHO</h1>
-<p>Points de victoire, points de défaite, activation des rooms, taille max, modération chat.</p>
+<ul>
+  <li>Points victoire</li>
+  <li>Points défaite</li>
+  <li>Activation modération</li>
+  <li>Nombre max de joueurs</li>
+</ul>
 <?php
 require_once XOOPS_ROOT_PATH . '/footer.php';

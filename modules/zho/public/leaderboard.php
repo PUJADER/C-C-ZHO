@@ -5,8 +5,8 @@ require_once XOOPS_ROOT_PATH . '/header.php';
 
 $dbFile = XOOPS_ROOT_PATH . '/modules/zho/data/leaderboard.sqlite';
 if (!file_exists($dbFile)) {
-  echo '<h1>Leaderboard non disponible</h1>';
-  echo '<p>Le leaderboard SQLite n\'a pas encore été initialisé.</p>';
+  echo '<h1>Classement ZHO</h1>';
+  echo '<p>Le leaderboard n\'a pas encore été initialisé.</p>';
   require_once XOOPS_ROOT_PATH . '/footer.php';
   exit;
 }
@@ -34,9 +34,9 @@ $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </tr>
   </thead>
   <tbody>
-    <?php foreach ($rows as $i => $row): ?>
+    <?php foreach ($rows as $idx => $row): ?>
       <tr>
-        <td><?= $i + 1 ?></td>
+        <td><?= $idx + 1 ?></td>
         <td><?= htmlspecialchars($row['username']) ?></td>
         <td><?= (int) $row['points'] ?></td>
         <td><?= (int) $row['wins'] ?></td>
