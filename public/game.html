@@ -2,208 +2,430 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>Zero Hour Lobby</title>
+    <title>Zero Hour Game</title>
     <style>
-      body { font-family: Arial, sans-serif; margin: 24px; background: #111827; color: #e5e7eb; }
-      .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-      input, button, select { padding: 8px 10px; border-radius: 6px; border: 1px solid #374151; }
-      button { background: #2563eb; color: white; border: none; cursor: pointer; }
-      #room-box, #chat { border: 1px solid #374151; border-radius: 8px; padding: 12px; background: #1f2937; }
-      #chat { height: 220px; overflow-y: auto; margin-top: 12px; }
-      .msg { margin-bottom: 6px; }
-      .small { font-size: 12px; color: #cbd5e1; }
-      .pill { display: inline-block; background: #0f766e; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+      :root {
+        --bg-dark: #0b1120;
+        --bg-panel: rgba(15, 23, 42, 0.92);
+        --panel-border: rgba(148, 163, 184, 0.2);
+        --accent: #38bdf8;
+        --accent-2: #22c55e;
+        --danger: #ef4444;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --ground: #16324a;
+        --ground-3: #1f3a52;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #14233b 0%, var(--bg-dark) 45%);
+        color: var(--text);
+        font-family: Arial, sans-serif;
+      }
+
+      #game-shell {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 16px;
+        width: 100%;
+        min-height: 100vh;
+        padding: 18px;
+      }
+
+      #game-area {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      #hud {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 18px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--panel-border);
+        border-radius: 14px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+      }
+
+      .hud-left, .hud-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .danger-tag {
+        background: rgba(239, 68, 68, 0.12);
+        border-color: rgba(239, 68, 68, 0.35);
+        color: #fca5a5;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      #battlefield {
+        position: relative;
+        flex: 1;
+        min-height: 560px;
+        border-radius: 18px;
+        overflow: hidden;
+        background:
+          linear-gradient(135deg, rgba(18, 74, 92, 0.8), rgba(6, 28, 42, 0.9)),
+          repeating-linear-gradient(
+            0deg,
+            rgba(255,255,255,0.02),
+            rgba(255,255,255,0.02) 2px,
+            transparent 2px,
+            transparent 22px
+          );
+        border: 1px solid var(--panel-border);
+        box-shadow: inset 0 0 16px rgba(56, 189, 248, 0.12);
+      }
+
+      #battlefield::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.12), transparent 25%),
+          radial-gradient(circle at 70% 65%, rgba(56, 189, 248, 0.1), transparent 28%);
+      }
+
+      .terrain-grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+
+      .unit {
+        position: absolute;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 3px solid rgba(255,255,255,0.8);
+        display: grid;
+        place-items: center;
+        font-size: 11px;
+        font-weight: bold;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.35);
+        transform: translate(-50%, -50%);
+        z-index: 2;
+      }
+
+      .unit .name {
+        display: block;
+        margin-top: 32px;
+        background: rgba(15, 23, 42, 0.8);
+        padding: 2px 5px;
+        border-radius: 999px;
+        font-size: 9px;
+        white-space: nowrap;
+      }
+
+      .unit.me {
+        border-color: #f8fafc;
+        box-shadow: 0 0 20px rgba(56, 189, 248, 0.75);
+      }
+
+      .unit.enemy {
+        border-color: rgba(254, 202, 202, 0.85);
+      }
+
+      #sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .panel {
+        background: var(--bg-panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 14px;
+        padding: 14px 16px;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+      }
+
+      .panel h3 {
+        margin: 0 0 10px 0;
+        font-size: 1rem;
+      }
+
+      #playersList {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      #playersList li {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.7);
+      }
+
+      #playersList li.me {
+        border-color: rgba(56, 189, 248, 0.6);
+      }
+
+      .player-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .avatar {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: inline-block;
+        background: linear-gradient(135deg, #38bdf8, #2563eb);
+        box-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
+      }
+
+      .player-meta span {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .player-state {
+        font-size: 10px;
+        padding: 4px 7px;
+        border-radius: 999px;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+        color: #86efac;
+      }
+
+      .player-state.waiting {
+        background: rgba(148, 163, 184, 0.12);
+        border-color: rgba(148, 163, 184, 0.35);
+        color: #cbd5e1;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      button:hover { filter: brightness(1.06); }
+
+      .warning {
+        color: #fca5a5;
+        font-size: 13px;
+      }
     </style>
   </head>
   <body>
-    <h1>Zero Hour Lobby</h1>
+    <div id="game-shell">
+      <div id="game-area">
+        <header id="hud">
+          <div class="hud-left">
+            <h1>Zero Hour</h1>
+            <span id="roomLabel" class="tag">Room</span>
+            <span id="mapLabel" class="tag">Map</span>
+          </div>
+          <div class="hud-right">
+            <span id="stateLabel" class="tag">Partie lancée</span>
+            <span id="statusLabel" class="tag danger-tag">LIVE</span>
+          </div>
+        </header>
 
-    <div class="row">
-      <input id="username" placeholder="Pseudo" value="Joueur" />
-      <button id="connectBtn">Connecter</button>
-    </div>
+        <div id="battlefield">
+          <div class="terrain-grid"></div>
+          <div id="battlefieldUnits"></div>
+        </div>
+      </div>
 
-    <div class="row">
-      <input id="roomName" placeholder="Nom de la room" value="Salle 1" />
-      <button id="createRoomBtn">Créer une room</button>
-    </div>
+      <aside id="sidebar">
+        <div class="panel">
+          <h3>Joueurs</h3>
+          <ul id="playersList"></ul>
+        </div>
 
-    <div class="row">
-      <input id="roomIdInput" placeholder="ID de la room" />
-      <button id="joinRoomBtn">Rejoindre</button>
-      <button id="listRoomsBtn">Lister les rooms</button>
-    </div>
+        <div class="panel">
+          <h3>Objectif</h3>
+          <p class="warning">Contrôlez le terrain, éliminez les cibles et protégez votre zone.</p>
+        </div>
 
-    <div id="room-box"></div>
-
-    <div class="row" style="margin-top: 20px;">
-      <button id="readyBtn">Toggle Ready</button>
-      <select id="mapSelect">
-        <option value="map_01">Map 01</option>
-        <option value="map_02">Map 02</option>
-        <option value="map_03">Map 03</option>
-      </select>
-      <button id="setMapBtn">Choisir map</button>
-      <button id="startBtn">Démarrer la partie</button>
-    </div>
-
-    <div id="chat"></div>
-
-    <div class="row" style="margin-top: 14px;">
-      <input id="chatInput" placeholder="Écrire un message" style="width: 320px;" />
-      <button id="sendMsgBtn">Envoyer</button>
+        <div class="panel">
+          <h3>Actions</h3>
+          <button id="endMatchBtn">Terminer la partie</button>
+        </div>
+      </aside>
     </div>
 
     <script>
-      const ws = new WebSocket('ws://localhost:3010');
-      let myUserId = null;
-      let myUsername = 'Joueur';
-      let currentRoom = null;
+      const params = new URLSearchParams(window.location.search);
+      const roomId = params.get('roomId');
+      const userId = params.get('userId');
 
-      const roomBox = document.getElementById('room-box');
-      const chatBox = document.getElementById('chat');
+      const roomLabel = document.getElementById('roomLabel');
+      const mapLabel = document.getElementById('mapLabel');
+      const stateLabel = document.getElementById('stateLabel');
+      const playersList = document.getElementById('playersList');
+      const battlefieldUnits = document.getElementById('battlefieldUnits');
+      const statusLabel = document.getElementById('statusLabel');
 
-      function safeText(value) {
-        return String(value ?? '').replace(/[<>]/g, '');
+      const palette = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#c084fc', '#fb7185'];
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function renderPlayers(room) {
+        const players = room && room.players ? room.players : [];
+
+        playersList.innerHTML = players.map((player, index) => {
+          const isMe = player.userId === userId;
+          const color = palette[index % palette.length];
+          const status = player.ready ? 'Ready' : 'Waiting';
+
+          return `
+            <li class="${isMe ? 'me' : ''}">
+              <div class="player-meta">
+                <span class="avatar" style="background:${color};"></span>
+                <span>${escapeHtml(player.username || 'Joueur')}</span>
+              </div>
+              <span class="player-state ${player.ready ? '' : 'waiting'}">${status}</span>
+            </li>
+          `;
+        }).join('') || '<li><span class="warning">Aucun joueur dans la room.</span></li>';
+      }
+
+      function renderBattlefield(room) {
+        const players = room && room.players ? room.players : [];
+
+        battlefieldUnits.innerHTML = players.map((player, index) => {
+          const x = 18 + ((index * 22) % 70);
+          const y = 24 + ((index * 19) % 52);
+          const color = palette[index % palette.length];
+          const isMe = player.userId === userId;
+          const label = (player.username || 'J').slice(0, 2).toUpperCase();
+
+          return `
+            <div class="unit ${isMe ? 'me' : 'enemy'}" style="left:${x}%; top:${y}%; background:${color};">
+              <span>${label}</span>
+              <span class="name">${escapeHtml(player.username || 'Joueur')}</span>
+            </div>
+          `;
+        }).join('');
       }
 
       function renderRoom(room) {
-        if (!room) {
-          roomBox.innerHTML = '<p>Aucune room.</p>';
-          return;
-        }
+        const safeRoom = room || { id: roomId, status: 'playing', mapId: 'map_01', players: [] };
 
-        const players = [...(room.players || [])].map((p) => {
-          const ready = p.ready ? '<span class="pill">ready</span>' : '<span class="small">not ready</span>';
-          return `<li>${safeText(p.username)} ${ready}</li>`;
-        }).join('') || '<li>Aucun joueur</li>';
+        roomLabel.textContent = safeRoom.id || roomId || 'Room';
+        mapLabel.textContent = safeRoom.mapId || 'map_01';
+        stateLabel.textContent = safeRoom.status === 'playing' ? 'Partie lancée' : safeRoom.status || 'Partie lancée';
+        statusLabel.textContent = safeRoom.status === 'playing' ? 'LIVE' : 'WAIT';
 
-        roomBox.innerHTML = `
-          <h3>${safeText(room.name)}</h3>
-          <p class="small">ID: ${safeText(room.id)} | Map: ${safeText(room.mapId ?? 'Aucune')} | Statut: ${safeText(room.status)}</p>
-          <ul>${players}</ul>
-        `;
+        renderPlayers(safeRoom);
+        renderBattlefield(safeRoom);
       }
 
-      function addChatMessage(data) {
-        const div = document.createElement('div');
-        div.className = 'msg';
-        div.innerHTML = `<span class="small">${safeText(data.username)}:</span> ${safeText(data.text)}`;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+      roomLabel.textContent = roomId || 'Room';
+      mapLabel.textContent = 'map_01';
+      stateLabel.textContent = 'Partie lancée';
+
+      const ws = new WebSocket('ws://localhost:3010');
 
       ws.addEventListener('open', () => {
-        console.log('WS connected');
-        ws.send(JSON.stringify({ type: 'list-rooms' }));
-      });
+        if (userId) {
+          ws.send(JSON.stringify({
+            type: 'register',
+            userId,
+            username: 'Joueur'
+          }));
+        }
 
-      ws.addEventListener('close', () => {
-        console.log('WS closed');
-      });
-
-      ws.addEventListener('error', (event) => {
-        console.error('WS error', event);
-        alert('Connexion WebSocket impossible. Vérifie que le serveur Node tourne bien sur le port 3010.');
+        if (roomId) {
+          ws.send(JSON.stringify({
+            type: 'join-room',
+            roomId,
+            userId,
+            username: 'Joueur'
+          }));
+        }
       });
 
       ws.addEventListener('message', (event) => {
         const data = JSON.parse(event.data);
+        console.log('game message', data);
 
         if (data.type === 'registered') {
-          myUserId = data.userId;
-          myUsername = document.getElementById('username').value || 'Joueur';
-          console.log('registered', myUserId);
+          console.log('registered in game', data.userId);
         }
 
-        if (data.type === 'room-list') {
-          const rooms = data.rooms || [];
-          if (!rooms.length) {
-            roomBox.innerHTML = '<p>Aucune room ouverte.</p>';
-            return;
-          }
-          const room = rooms[0];
-          renderRoom(room);
-        }
-
-        if (data.type === 'room-created' || data.type === 'joined-room' || data.type === 'room-update') {
-          currentRoom = data.room;
-          renderRoom(currentRoom);
-        }
-
-        if (data.type === 'chat-message') {
-          addChatMessage(data);
-        }
-
-        if (data.type === 'match-started') {
+        if (data.type === 'joined-room' || data.type === 'room-update' || data.type === 'match-started') {
           renderRoom(data.room);
-          addChatMessage({ username: 'Serveur', text: `Partie démarrée sur ${data.mapId || 'map'} !` });
-          setTimeout(() => {
-            window.location.href = 'game.html?roomId=' + data.room.id + '&userId=' + myUserId;
-          }, 700);
         }
 
-        if (data.type === 'error') {
-          alert(data.message || 'Erreur');
+        if (data.type === 'match-ended') {
+          renderRoom(data.room);
+          stateLabel.textContent = 'Partie terminée';
+          statusLabel.textContent = 'END';
+          statusLabel.classList.remove('danger-tag');
         }
       });
 
-      document.getElementById('connectBtn').onclick = () => {
-        myUsername = document.getElementById('username').value || 'Joueur';
-        if (!myUserId) {
-          ws.send(JSON.stringify({ type: 'register', userId: crypto.randomUUID(), username: myUsername }));
-        }
-      };
+      ws.addEventListener('error', () => {
+        stateLabel.textContent = 'Serveur indisponible';
+      });
 
-      document.getElementById('createRoomBtn').onclick = () => {
-        if (!myUserId) {
-          alert('Connecte-toi d\'abord');
-          return;
-        }
+      document.getElementById('endMatchBtn').addEventListener('click', () => {
         ws.send(JSON.stringify({
-          type: 'create-room',
-          userId: myUserId,
-          username: myUsername,
-          name: document.getElementById('roomName').value || 'Salle 1'
+          type: 'end-match',
+          winnerId: userId
         }));
-      };
 
-      document.getElementById('joinRoomBtn').onclick = () => {
-        if (!myUserId) {
-          alert('Connecte-toi d\'abord');
-          return;
-        }
-        ws.send(JSON.stringify({
-          type: 'join-room',
-          userId: myUserId,
-          username: myUsername,
-          roomId: document.getElementById('roomIdInput').value
-        }));
-      };
-
-      document.getElementById('listRoomsBtn').onclick = () => {
-        ws.send(JSON.stringify({ type: 'list-rooms' }));
-      };
-
-      document.getElementById('readyBtn').onclick = () => {
-        if (!currentRoom) return;
-        ws.send(JSON.stringify({ type: 'set-ready', ready: true }));
-      };
-
-      document.getElementById('setMapBtn').onclick = () => {
-        ws.send(JSON.stringify({ type: 'set-map', mapId: document.getElementById('mapSelect').value }));
-      };
-
-      document.getElementById('startBtn').onclick = () => {
-        ws.send(JSON.stringify({ type: 'start-match' }));
-      };
-
-      document.getElementById('sendMsgBtn').onclick = () => {
-        const text = document.getElementById('chatInput').value.trim();
-        if (!text) return;
-        ws.send(JSON.stringify({ type: 'chat-message', text }));
-        document.getElementById('chatInput').value = '';
-      };
+        stateLabel.textContent = 'Partie terminée';
+        statusLabel.textContent = 'END';
+      });
     </script>
   </body>
 </html>
