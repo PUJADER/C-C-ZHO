@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Zero Hour Lobby</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 24px; background: #111827; color: #e5e7eb; }
+      .row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+      input, button, select { padding: 8px 10px; border-radius: 6px; border: 1px solid #374151; }
+      button { background: #2563eb; color: white; border: none; cursor: pointer; }
+      #room-box, #chat { border: 1px solid #374151; border-radius: 8px; padding: 12px; background: #1f2937; }
+      #chat { height: 220px; overflow-y: auto; margin-top: 12px; }
+      .msg { margin-bottom: 6px; }
+      .small { font-size: 12px; color: #cbd5e1; }
+      .pill { display: inline-block; background: #0f766e; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Zero Hour Lobby</h1>
+
+    <div class="row">
+      <input id="username" placeholder="Pseudo" value="Joueur" />
+      <button id="connectBtn">Connecter</button>
+    </div>
+
+    <div class="row">
+      <input id="roomName" placeholder="Nom de la room" value="Salle 1" />
+      <button id="createRoomBtn">Créer une room</button>
+    </div>
+
+    <div class="row">
+      <input id="roomIdInput" placeholder="ID de la room" />
+      <button id="joinRoomBtn">Rejoindre</button>
+      <button id="listRoomsBtn">Lister les rooms</button>
+    </div>
+
+    <div id="room-box"></div>
+
+    <div class="row" style="margin-top: 20px;">
+      <button id="readyBtn">Toggle Ready</button>
+      <select id="mapSelect">
+        <option value="map_01">Map 01</option>
+        <option value="map_02">Map 02</option>
+        <option value="map_03">Map 03</option>
+      </select>
+      <button id="setMapBtn">Choisir map</button>
+      <button id="startBtn">Démarrer la partie</button>
+    </div>
+
+    <div id="chat"></div>
+
+    <div class="row" style="margin-top: 14px;">
+      <input id="chatInput" placeholder="Écrire un message" style="width: 320px;" />
+      <button id="sendMsgBtn">Envoyer</button>
+    </div>
+
+    <script>
+      const ws = new WebSocket('ws://localhost:3010');
+      let myUserId = null;
+      let myUsername = 'Joueur';
+      let currentRoom = null;
+
+      const roomBox = document.getElementById('room-box');
+      const chatBox = document.getElementById('chat');
+
+      function safeText(value) {
+        return String(value ?? '').replace(/[<>]/g, '');
+      }
+
+      function renderRoom(room) {
+        if (!room) {
+          roomBox.innerHTML = '<p>Aucune room.</p>';
+          return;
+        }
+
+        const players = [...(room.players || [])].map((p) => {
+          const ready = p.ready ? '<span class="pill">ready</span>' : '<span class="small">not ready</span>';
+          return `<li>${safeText(p.username)} ${ready}</li>`;
+        }).join('') || '<li>Aucun joueur</li>';
+
+        roomBox.innerHTML = `
+          <h3>${safeText(room.name)}</h3>
+          <p class="small">ID: ${safeText(room.id)} | Map: ${safeText(room.mapId ?? 'Aucune')} | Statut: ${safeText(room.status)}</p>
+          <ul>${players}</ul>
+        `;
+      }
+
+      function addChatMessage(data) {
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.innerHTML = `<span class="small">${safeText(data.username)}:</span> ${safeText(data.text)}`;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      ws.addEventListener('open', () => {
+        console.log('WS connected');
+        ws.send(JSON.stringify({ type: 'list-rooms' }));
+      });
+
+      ws.addEventListener('close', () => {
+        console.log('WS closed');
+      });
+
+      ws.addEventListener('error', (event) => {
+        console.error('WS error', event);
+        alert('Connexion WebSocket impossible. Vérifie que le serveur Node tourne bien sur le port 3010.');
+      });
+
+      ws.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'registered') {
+          myUserId = data.userId;
+          myUsername = document.getElementById('username').value || 'Joueur';
+          console.log('registered', myUserId);
+        }
+
+        if (data.type === 'room-list') {
+          const rooms = data.rooms || [];
+          if (!rooms.length) {
+            roomBox.innerHTML = '<p>Aucune room ouverte.</p>';
+            return;
+          }
+          const room = rooms[0];
+          renderRoom(room);
+        }
+
+        if (data.type === 'room-created' || data.type === 'joined-room' || data.type === 'room-update') {
+          currentRoom = data.room;
+          renderRoom(currentRoom);
+        }
+
+        if (data.type === 'chat-message') {
+          addChatMessage(data);
+        }
+
+        if (data.type === 'match-started') {
+          renderRoom(data.room);
+          addChatMessage({ username: 'Serveur', text: `Partie démarrée sur ${data.mapId || 'map'} !` });
+          setTimeout(() => {
+            window.location.href = 'game.html?roomId=' + data.room.id + '&userId=' + myUserId;
+          }, 700);
+        }
+
+        if (data.type === 'error') {
+          alert(data.message || 'Erreur');
+        }
+      });
+
+      document.getElementById('connectBtn').onclick = () => {
+        myUsername = document.getElementById('username').value || 'Joueur';
+        if (!myUserId) {
+          ws.send(JSON.stringify({ type: 'register', userId: crypto.randomUUID(), username: myUsername }));
+        }
+      };
+
+      document.getElementById('createRoomBtn').onclick = () => {
+        if (!myUserId) {
+          alert('Connecte-toi d\'abord');
+          return;
+        }
+        ws.send(JSON.stringify({
+          type: 'create-room',
+          userId: myUserId,
+          username: myUsername,
+          name: document.getElementById('roomName').value || 'Salle 1'
+        }));
+      };
+
+      document.getElementById('joinRoomBtn').onclick = () => {
+        if (!myUserId) {
+          alert('Connecte-toi d\'abord');
+          return;
+        }
+        ws.send(JSON.stringify({
+          type: 'join-room',
+          userId: myUserId,
+          username: myUsername,
+          roomId: document.getElementById('roomIdInput').value
+        }));
+      };
+
+      document.getElementById('listRoomsBtn').onclick = () => {
+        ws.send(JSON.stringify({ type: 'list-rooms' }));
+      };
+
+      document.getElementById('readyBtn').onclick = () => {
+        if (!currentRoom) return;
+        ws.send(JSON.stringify({ type: 'set-ready', ready: true }));
+      };
+
+      document.getElementById('setMapBtn').onclick = () => {
+        ws.send(JSON.stringify({ type: 'set-map', mapId: document.getElementById('mapSelect').value }));
+      };
+
+      document.getElementById('startBtn').onclick = () => {
+        ws.send(JSON.stringify({ type: 'start-match' }));
+      };
+
+      document.getElementById('sendMsgBtn').onclick = () => {
+        const text = document.getElementById('chatInput').value.trim();
+        if (!text) return;
+        ws.send(JSON.stringify({ type: 'chat-message', text }));
+        document.getElementById('chatInput').value = '';
+      };
+    </script>
+  </body>
+</html>
