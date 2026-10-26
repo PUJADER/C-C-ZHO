@@ -5,17 +5,14 @@
     <title>Zero Hour Game</title>
     <style>
       :root {
-        --bg-dark: #0b1120;
-        --bg-panel: rgba(15, 23, 42, 0.92);
-        --panel-border: rgba(148, 163, 184, 0.2);
-        --accent: #38bdf8;
-        --accent-2: #22c55e;
-        --danger: #ef4444;
-        --text: #e2e8f0;
-        --muted: #94a3b8;
-        --ground: #16324a;
-        --ground-2: #20415d;
-        --ground-3: #1f3a52;
+        --bg: #0b1220;
+        --panel: rgba(15, 23, 42, 0.94);
+        --line: rgba(148, 163, 184, 0.2);
+        --blue: #38bdf8;
+        --green: #4ade80;
+        --red: #f87171;
+        --amber: #fbbf24;
+        --text: #e5e7eb;
       }
 
       * { box-sizing: border-box; }
@@ -23,16 +20,15 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: radial-gradient(circle at top, #14233b 0%, var(--bg-dark) 45%);
+        background: radial-gradient(circle at top, #11233d, var(--bg));
         color: var(--text);
         font-family: Arial, sans-serif;
       }
 
       #game-shell {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 360px;
+        grid-template-columns: minmax(0, 1fr) 320px;
         gap: 16px;
-        width: 100%;
         min-height: 100vh;
         padding: 18px;
       }
@@ -47,44 +43,22 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 14px 18px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid var(--panel-border);
-        border-radius: 14px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-      }
-
-      .hud-left, .hud-right {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
+        padding: 12px 18px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
       }
 
       .tag {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        display: inline-block;
         padding: 6px 10px;
         border-radius: 999px;
+        border: 1px solid rgba(56, 189, 248, 0.4);
         background: rgba(56, 189, 248, 0.12);
-        border: 1px solid rgba(56, 189, 248, 0.35);
-        color: var(--accent);
+        color: var(--blue);
         font-size: 12px;
         font-weight: bold;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
-
-      .danger-tag {
-        background: rgba(239, 68, 68, 0.12);
-        border-color: rgba(239, 68, 68, 0.35);
-        color: #fca5a5;
-      }
-
-      h1 {
-        margin: 0;
-        font-size: 1.2rem;
       }
 
       #battlefield {
@@ -93,21 +67,11 @@
         min-height: 620px;
         border-radius: 18px;
         overflow: hidden;
-        background: linear-gradient(135deg, rgba(18, 74, 92, 0.8), rgba(6, 28, 42, 0.9));
-        border: 1px solid var(--panel-border);
-        box-shadow: inset 0 0 16px rgba(56, 189, 248, 0.12);
+        background: linear-gradient(135deg, #123348, #0d1f2d);
+        border: 1px solid var(--line);
       }
 
-      #battlefield::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.12), transparent 25%),
-          radial-gradient(circle at 70% 65%, rgba(56, 189, 248, 0.1), transparent 28%);
-      }
-
-      .map-grid {
+      #mapGrid {
         position: absolute;
         inset: 0;
         display: grid;
@@ -121,15 +85,14 @@
       .tile {
         border-radius: 6px;
         border: 1px solid rgba(255,255,255,0.05);
-        position: relative;
       }
 
-      .tile.grass { background: linear-gradient(135deg, #2d5d4d, #214b3d); }
-      .tile.road { background: linear-gradient(135deg, #5a6472, #3d475a); }
-      .tile.water { background: linear-gradient(135deg, #0b3c60, #0b2c4b); }
-      .tile.forest { background: linear-gradient(135deg, #1f5f3b, #17482f); }
-      .tile.base { background: linear-gradient(135deg, #57908f, #3e6d72); }
-      .tile.rock { background: linear-gradient(135deg, #687587, #495c71); }
+      .grass { background: linear-gradient(135deg, #2d5d4d, #214b3d); }
+      .road { background: linear-gradient(135deg, #676d76, #404b5d); }
+      .water { background: linear-gradient(135deg, #0b3c60, #0b2c4b); }
+      .forest { background: linear-gradient(135deg, #1f5f3b, #17482f); }
+      .base { background: linear-gradient(135deg, #57908f, #3e6d72); }
+      .rock { background: linear-gradient(135deg, #67768b, #4f5f75); }
 
       .unit {
         position: absolute;
@@ -141,10 +104,13 @@
         place-items: center;
         font-size: 11px;
         font-weight: bold;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.35);
         transform: translate(-50%, -50%);
-        z-index: 3;
+        z-index: 2;
+        box-shadow: 0 0 18px rgba(0,0,0,0.35);
       }
+
+      .unit.me { box-shadow: 0 0 18px rgba(56, 189, 248, 0.9); }
+      .unit.enemy { box-shadow: 0 0 18px rgba(248, 113, 113, 0.75); }
 
       .unit .name {
         display: block;
@@ -156,14 +122,6 @@
         white-space: nowrap;
       }
 
-      .unit.me {
-        box-shadow: 0 0 20px rgba(56, 189, 248, 0.75);
-      }
-
-      .unit.enemy {
-        box-shadow: 0 0 20px rgba(239, 68, 68, 0.55);
-      }
-
       #sidebar {
         display: flex;
         flex-direction: column;
@@ -171,117 +129,47 @@
       }
 
       .panel {
-        background: var(--bg-panel);
-        border: 1px solid var(--panel-border);
-        border-radius: 14px;
-        padding: 14px 16px;
-        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.15);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px;
       }
 
-      .panel h3 {
-        margin: 0 0 10px 0;
-        font-size: 1rem;
-      }
-
-      #playersList {
+      ul {
         list-style: none;
-        margin: 0;
         padding: 0;
+        margin: 0;
         display: flex;
         flex-direction: column;
-        gap: 10px;
-      }
-
-      #playersList li {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 8px 10px;
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        border-radius: 10px;
-        background: rgba(15, 23, 42, 0.7);
-      }
-
-      #playersList li.me {
-        border-color: rgba(56, 189, 248, 0.6);
-      }
-
-      .player-meta {
-        display: flex;
-        align-items: center;
         gap: 8px;
-        min-width: 0;
-      }
-
-      .avatar {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        display: inline-block;
-        background: linear-gradient(135deg, #38bdf8, #2563eb);
-        box-shadow: 0 0 8px rgba(56, 189, 248, 0.45);
-      }
-
-      .player-meta span {
-        font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .player-state {
-        font-size: 10px;
-        padding: 4px 7px;
-        border-radius: 999px;
-        background: rgba(34, 197, 94, 0.12);
-        border: 1px solid rgba(34, 197, 94, 0.35);
-        color: #86efac;
-      }
-
-      .player-state.waiting {
-        background: rgba(148, 163, 184, 0.12);
-        border-color: rgba(148, 163, 184, 0.35);
-        color: #cbd5e1;
       }
 
       button {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        color: white;
         border: 0;
         border-radius: 10px;
         padding: 10px 12px;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        color: white;
-        cursor: pointer;
         font-weight: bold;
-      }
-
-      button:hover { filter: brightness(1.06); }
-
-      .warning {
-        color: #fca5a5;
-        font-size: 13px;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
     <div id="game-shell">
       <div id="game-area">
-        <header id="hud">
-          <div class="hud-left">
-            <h1>Zero Hour</h1>
-            <span id="roomLabel" class="tag">Room</span>
-            <span id="mapLabel" class="tag">Map</span>
-            <span id="timeLabel" class="tag">Heure H</span>
+        <div id="hud">
+          <div>
+            <span class="tag">Zero Hour</span>
+            <span class="tag" id="mapName">Map</span>
+            <span class="tag" id="heureLabel">Heure H + 00:00:00</span>
           </div>
-          <div class="hud-right">
-            <span id="stateLabel" class="tag">Partie lancée</span>
-            <span id="statusLabel" class="tag danger-tag">LIVE</span>
-          </div>
-        </header>
+          <span class="tag" id="stateLabel">Partie lancée</span>
+        </div>
 
         <div id="battlefield">
-          <div id="mapGrid" class="map-grid"></div>
-          <div id="battlefieldUnits"></div>
+          <div id="mapGrid"></div>
+          <div id="unitsLayer"></div>
         </div>
       </div>
 
@@ -289,11 +177,6 @@
         <div class="panel">
           <h3>Joueurs</h3>
           <ul id="playersList"></ul>
-        </div>
-
-        <div class="panel">
-          <h3>Objectif</h3>
-          <p class="warning">Contrôlez le terrain, éliminez les cibles et protégez votre base.</p>
         </div>
 
         <div class="panel">
@@ -307,187 +190,158 @@
       const params = new URLSearchParams(window.location.search);
       const roomId = params.get('roomId');
       const userId = params.get('userId');
+      const selectedMapId = params.get('mapId') || 'generals_arena';
 
-      const roomLabel = document.getElementById('roomLabel');
-      const mapLabel = document.getElementById('mapLabel');
-      const timeLabel = document.getElementById('timeLabel');
+      const mapName = document.getElementById('mapName');
+      const heureLabel = document.getElementById('heureLabel');
       const stateLabel = document.getElementById('stateLabel');
-      const playersList = document.getElementById('playersList');
-      const battlefieldUnits = document.getElementById('battlefieldUnits');
-      const statusLabel = document.getElementById('statusLabel');
       const mapGrid = document.getElementById('mapGrid');
+      const unitsLayer = document.getElementById('unitsLayer');
+      const playersList = document.getElementById('playersList');
 
-      const palette = ['#38bdf8', '#34d399', '#fbbf24', '#f472b6', '#c084fc', '#fb7185'];
-
-      const generalsMap = [
-        'g,g,g,g,g,r,r,g,g,g,g,g',
-        'g,f,g,g,g,r,r,g,g,f,g,g',
-        'g,g,w,w,w,r,r,w,w,g,g,g',
-        'g,g,w,w,w,r,r,w,w,g,g,g',
-        'g,g,g,g,g,r,r,g,g,g,g,g',
-        'r,r,r,r,r,b,b,r,r,r,r,r',
-        'g,g,g,g,g,r,r,g,g,g,g,g',
-        'g,g,w,w,w,r,r,w,w,g,g,g',
-        'g,g,w,w,w,r,r,w,w,g,g,g',
-        'g,f,g,g,g,r,r,g,g,f,g,g',
-        'g,g,g,g,g,r,r,g,g,g,g,g',
-        'g,g,g,g,g,r,r,g,g,g,g,g'
-      ];
-
-      const terrainClass = {
-        g: 'grass',
-        r: 'road',
-        w: 'water',
-        f: 'forest',
-        b: 'base',
+      const mapCatalog = {
+        generals_arena: {
+          name: 'Generals Arena',
+          tiles: [
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
+            ['grass','forest','grass','grass','grass','road','road','grass','forest','grass','grass','grass'],
+            ['grass','grass','water','water','water','road','road','water','water','grass','grass','grass'],
+            ['grass','grass','water','water','water','road','road','water','water','grass','grass','grass'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
+            ['road','road','road','road','road','base','base','road','road','road','road','road'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
+            ['grass','grass','water','water','water','road','road','water','water','grass','grass','grass'],
+            ['grass','grass','water','water','water','road','road','water','water','grass','grass','grass'],
+            ['grass','forest','grass','grass','grass','road','road','grass','forest','grass','grass','grass'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass']
+          ]
+        },
+        delta_ridge: {
+          name: 'Delta Ridge',
+          tiles: [
+            ['grass','grass','grass','grass','forest','forest','forest','grass','grass','grass','grass','grass'],
+            ['road','road','road','road','road','road','road','road','road','road','grass','grass'],
+            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
+            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
+            ['grass','grass','grass','grass','forest','forest','forest','grass','grass','road','grass','grass'],
+            ['grass','grass','grass','road','road','base','base','road','road','road','grass','grass'],
+            ['grass','grass','grass','road','road','road','road','road','road','road','grass','grass'],
+            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
+            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
+            ['grass','grass','grass','grass','forest','forest','forest','grass','grass','road','grass','grass'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass']
+          ]
+        },
+        iron_harbor: {
+          name: 'Iron Harbor',
+          tiles: [
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','forest','forest'],
+            ['grass','forest','grass','grass','grass','road','road','grass','grass','grass','forest','forest'],
+            ['grass','grass','water','grass','road','road','road','road','grass','grass','grass','grass'],
+            ['grass','grass','water','grass','road','road','road','road','grass','grass','grass','grass'],
+            ['grass','grass','grass','rock','rock','road','road','rock','rock','grass','grass','grass'],
+            ['road','road','road','road','road','base','base','road','road','road','road','road'],
+            ['grass','grass','grass','rock','rock','road','road','rock','rock','grass','grass','grass'],
+            ['grass','grass','grass','grass','road','road','road','road','grass','grass','water','grass'],
+            ['grass','grass','grass','grass','road','road','road','road','grass','grass','water','grass'],
+            ['grass','forest','grass','grass','grass','road','road','grass','forest','grass','grass','grass'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','forest','forest'],
+            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','forest','forest']
+          ]
+        }
       };
 
       function renderMap() {
-        const rows = generalsMap.map((row) => row.split(','));
-        mapGrid.innerHTML = rows.flatMap((line) =>
-          line.map((tile) => `<div class="tile ${terrainClass[tile] || 'grass'}"></div>`)
-        ).join('');
+        const currentMap = mapCatalog[selectedMapId] || mapCatalog.generals_arena;
+        mapName.textContent = currentMap.name;
+        mapGrid.innerHTML = currentMap.tiles.flatMap((row) => row.map((tile) => `<div class="tile ${tile}"></div>`)).join('');
       }
 
-      function formatClock(totalSeconds) {
+      function formatHeure(totalSeconds) {
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-        return `H + ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+        return `Heure H + ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
       }
 
-      function startClock() {
-        const startedAt = Date.now();
-        const totalDuration = 60 * 18;
-
-        function tick() {
-          const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-          const remaining = Math.max(totalDuration - elapsed, 0);
-          timeLabel.textContent = formatClock(remaining);
-          if (remaining <= 0) {
-            stateLabel.textContent = 'Fin de partie';
-            statusLabel.textContent = 'END';
-          }
-        }
-
-        tick();
-        setInterval(tick, 1000);
-      }
-
-      function escapeHtml(value) {
-        return String(value ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
+      function startHeureH() {
+        const start = Date.now();
+        setInterval(() => {
+          const elapsed = Math.floor((Date.now() - start) / 1000);
+          heureLabel.textContent = formatHeure(elapsed);
+        }, 1000);
       }
 
       function renderPlayers(room) {
-        const players = room && room.players ? room.players : [];
+        const players = room && room.players ? [...room.players.values()] : [
+          { username: 'Joueur 1', team: 'blue', army: 'US', color: 'blue' },
+          { username: 'Joueur 2', team: 'red', army: 'China', color: 'red' }
+        ];
 
-        playersList.innerHTML = players.map((player, index) => {
-          const isMe = player.userId === userId;
-          const color = palette[index % palette.length];
-          const status = player.ready ? 'Ready' : 'Waiting';
+        playersList.innerHTML = players.map((player) => {
+          const color = {
+            blue: '#38bdf8',
+            red: '#f87171',
+            green: '#34d399',
+            gold: '#fbbf24'
+          }[player.color] || '#38bdf8';
 
           return `
-            <li class="${isMe ? 'me' : ''}">
-              <div class="player-meta">
-                <span class="avatar" style="background:${color};"></span>
-                <span>${escapeHtml(player.username || 'Joueur')}</span>
+            <li>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:18px;height:18px;border-radius:50%;background:${color};display:inline-block;"></span>
+                <span>${player.username || 'Joueur'}</span>
               </div>
-              <span class="player-state ${player.ready ? '' : 'waiting'}">${status}</span>
+              <span>${player.army || 'US'} / ${player.team || 'blue'}</span>
             </li>
-          `;
-        }).join('') || '<li><span class="warning">Aucun joueur dans la room.</span></li>';
-      }
-
-      function renderBattlefield(room) {
-        const players = room && room.players ? room.players : [];
-
-        battlefieldUnits.innerHTML = players.map((player, index) => {
-          const x = 18 + ((index * 22) % 70);
-          const y = 22 + ((index * 19) % 55);
-          const color = palette[index % palette.length];
-          const isMe = player.userId === userId;
-          const label = (player.username || 'J').slice(0, 2).toUpperCase();
-
-          return `
-            <div class="unit ${isMe ? 'me' : 'enemy'}" style="left:${x}%; top:${y}%; background:${color};">
-              <span>${label}</span>
-              <span class="name">${escapeHtml(player.username || 'Joueur')}</span>
-            </div>
           `;
         }).join('');
       }
 
-      function renderRoom(room) {
-        const safeRoom = room || { id: roomId, status: 'playing', mapId: 'Map_01', players: [] };
+      function renderUnits() {
+        const units = [
+          { x: 18, y: 22, color: '#38bdf8', label: 'A1', me: true, name: 'Alpha' },
+          { x: 52, y: 70, color: '#f87171', label: 'E1', me: false, name: 'Enemy' },
+          { x: 68, y: 38, color: '#4ade80', label: 'A2', me: true, name: 'Bravo' }
+        ];
 
-        roomLabel.textContent = safeRoom.id || roomId || 'Room';
-        mapLabel.textContent = safeRoom.mapId || 'Map_01';
-        stateLabel.textContent = safeRoom.status === 'playing' ? 'Partie lancée' : safeRoom.status || 'Partie lancée';
-        statusLabel.textContent = safeRoom.status === 'playing' ? 'LIVE' : 'WAIT';
-
-        renderPlayers(safeRoom);
-        renderBattlefield(safeRoom);
+        unitsLayer.innerHTML = units.map((u) => `
+          <div class="unit ${u.me ? 'me' : 'enemy'}" style="left:${u.x}%; top:${u.y}%; background:${u.color};">
+            <span>${u.label}</span>
+            <span class="name">${u.name}</span>
+          </div>
+        `).join('');
       }
 
       renderMap();
-      startClock();
-      roomLabel.textContent = roomId || 'Room';
-      mapLabel.textContent = 'Generals Arena';
-      stateLabel.textContent = 'Partie lancée';
+      startHeureH();
+      renderPlayers();
+      renderUnits();
 
       const ws = new WebSocket('ws://localhost:3010');
 
       ws.addEventListener('open', () => {
         if (userId) {
-          ws.send(JSON.stringify({
-            type: 'register',
-            userId,
-            username: 'Joueur'
-          }));
+          ws.send(JSON.stringify({ type: 'register', userId, username: 'Joueur' }));
         }
 
         if (roomId) {
-          ws.send(JSON.stringify({
-            type: 'join-room',
-            roomId,
-            userId,
-            username: 'Joueur'
-          }));
+          ws.send(JSON.stringify({ type: 'join-room', roomId, userId, username: 'Joueur' }));
         }
       });
 
       ws.addEventListener('message', (event) => {
         const data = JSON.parse(event.data);
-        console.log('game message', data);
-
         if (data.type === 'joined-room' || data.type === 'room-update' || data.type === 'match-started') {
-          renderRoom(data.room);
+          renderPlayers(data.room);
         }
-
-        if (data.type === 'match-ended') {
-          renderRoom(data.room);
-          stateLabel.textContent = 'Partie terminée';
-          statusLabel.textContent = 'END';
-        }
-      });
-
-      ws.addEventListener('error', () => {
-        stateLabel.textContent = 'Serveur indisponible';
       });
 
       document.getElementById('endMatchBtn').addEventListener('click', () => {
-        ws.send(JSON.stringify({
-          type: 'end-match',
-          winnerId: userId
-        }));
-
+        ws.send(JSON.stringify({ type: 'end-match', winnerId: userId }));
         stateLabel.textContent = 'Partie terminée';
-        statusLabel.textContent = 'END';
       });
     </script>
   </body>

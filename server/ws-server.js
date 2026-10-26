@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 import { randomUUID } from 'node:crypto';
 
 const rooms = new Map();
-const clients = new Map(); // ws -> { userId, username, roomId }
+const clients = new Map();
 
 function createRoom(name, hostId) {
   const roomId = randomUUID();
@@ -10,7 +10,7 @@ function createRoom(name, hostId) {
     id: roomId,
     name,
     hostId,
-    mapId: null,
+    mapId: 'generals_arena',
     status: 'lobby',
     maxPlayers: 8,
     players: new Map(),
@@ -53,11 +53,10 @@ function broadcastRoomList() {
 }
 
 function safeUserInfo(ws) {
-  const info = clients.get(ws);
-  return info ?? null;
+  return clients.get(ws) ?? null;
 }
 
-const wss = new WebSocketServer({ port: 3002 });
+const wss = new WebSocketServer({ port: 3010 });
 
 wss.on('connection', (ws) => {
   ws.on('message', (raw) => {
@@ -74,8 +73,12 @@ wss.on('connection', (ws) => {
     if (type === 'register') {
       const userId = String(message.userId || randomUUID());
       const username = String(message.username || 'Guest').slice(0, 48);
-      clients.set(ws, { userId, username, roomId: null });
-      ws.send(JSON.stringify({ type: 'registered', userId, username }));
+      const army = String(message.army || 'US').slice(0, 24);
+      const team = String(message.team || 'blue').slice(0, 24);
+      const color = String(message.color || 'blue').slice(0, 24);
+
+      clients.set(ws, { userId, username, army, team, color, roomId: null });
+      ws.send(JSON.stringify({ type: 'registered', userId, username, army, team, color }));
       broadcastRoomList();
       return;
     }
@@ -87,19 +90,27 @@ wss.on('connection', (ws) => {
     }
 
     if (type === 'list-rooms') {
-      const list = [...rooms.values()].map(roomToJSON);
-      ws.send(JSON.stringify({ type: 'room-list', rooms: list }));
+      ws.send(JSON.stringify({ type: 'room-list', rooms: [...rooms.values()].map(roomToJSON) }));
       return;
     }
 
     if (type === 'create-room') {
       const name = String(message.name || 'Salle').slice(0, 80);
       const room = createRoom(name, userInfo.userId);
+      const army = String(message.army || userInfo.army || 'US').slice(0, 24);
+      const team = String(message.team || userInfo.team || 'blue').slice(0, 24);
+      const color = String(message.color || userInfo.color || 'blue').slice(0, 24);
+
+      room.mapId = String(message.mapId || 'generals_arena');
       room.players.set(userInfo.userId, {
         userId: userInfo.userId,
         username: userInfo.username,
+        army,
+        team,
+        color,
         ready: false,
       });
+
       userInfo.roomId = room.id;
       ws.send(JSON.stringify({ type: 'room-created', room: roomToJSON(room) }));
       broadcastRoomList();
@@ -108,8 +119,7 @@ wss.on('connection', (ws) => {
     }
 
     if (type === 'join-room') {
-      const roomId = message.roomId;
-      const room = rooms.get(roomId);
+      const room = rooms.get(message.roomId);
       if (!room) {
         ws.send(JSON.stringify({ type: 'error', message: 'room not found' }));
         return;
@@ -125,18 +135,25 @@ wss.on('connection', (ws) => {
         return;
       }
 
+      const army = String(message.army || userInfo.army || 'US').slice(0, 24);
+      const team = String(message.team || userInfo.team || 'blue').slice(0, 24);
+      const color = String(message.color || userInfo.color || 'blue').slice(0, 24);
+
       room.players.set(userInfo.userId, {
         userId: userInfo.userId,
         username: userInfo.username,
+        army,
+        team,
+        color,
         ready: false,
       });
-      userInfo.roomId = room.id;
 
-      const payload = {
-        type: 'joined-room',
-        room: roomToJSON(room),
-      };
-      ws.send(JSON.stringify(payload));
+      userInfo.roomId = room.id;
+      userInfo.army = army;
+      userInfo.team = team;
+      userInfo.color = color;
+
+      ws.send(JSON.stringify({ type: 'joined-room', room: roomToJSON(room) }));
       broadcastRoomList();
       broadcastToRoom(room.id, { type: 'room-update', room: roomToJSON(room) });
       return;
@@ -210,7 +227,7 @@ wss.on('connection', (ws) => {
       if (!room) return;
       if (room.hostId !== userInfo.userId) return;
 
-      room.mapId = String(message.mapId || 'map_01');
+      room.mapId = String(message.mapId || 'generals_arena');
       broadcastToRoom(roomId, { type: 'room-update', room: roomToJSON(room) });
       return;
     }
@@ -267,6 +284,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log('WS room server running on ws://localhost:3002');
+console.log('WS room server running on ws://localhost:3010');
 
 export { rooms, clients };
