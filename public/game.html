@@ -2,16 +2,16 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <title>Zero Hour Game</title>
+    <title>Zero Hour RTS</title>
     <style>
       :root {
         --bg: #0b1220;
         --panel: rgba(15, 23, 42, 0.94);
-        --line: rgba(148, 163, 184, 0.2);
+        --line: rgba(148, 163, 184, 0.22);
         --blue: #38bdf8;
-        --green: #4ade80;
         --red: #f87171;
-        --amber: #fbbf24;
+        --green: #4ade80;
+        --gold: #fbbf24;
         --text: #e5e7eb;
       }
 
@@ -107,10 +107,18 @@
         transform: translate(-50%, -50%);
         z-index: 2;
         box-shadow: 0 0 18px rgba(0,0,0,0.35);
+        cursor: pointer;
       }
 
-      .unit.me { box-shadow: 0 0 18px rgba(56, 189, 248, 0.9); }
-      .unit.enemy { box-shadow: 0 0 18px rgba(248, 113, 113, 0.75); }
+      .unit.selected {
+        border-color: white;
+        box-shadow: 0 0 0 3px rgba(255,255,255,0.7), 0 0 20px rgba(56,189,248,0.9);
+      }
+
+      .unit.blue { background: #38bdf8; }
+      .unit.red { background: #f87171; }
+      .unit.green { background: #4ade80; }
+      .unit.gold { background: #fbbf24; }
 
       .unit .name {
         display: block;
@@ -120,6 +128,17 @@
         border-radius: 999px;
         font-size: 9px;
         white-space: nowrap;
+      }
+
+      .unit .hp {
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 9px;
+        background: rgba(15,23,42,0.8);
+        border-radius: 999px;
+        padding: 2px 5px;
       }
 
       #sidebar {
@@ -142,6 +161,13 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+      }
+
+      .info {
+        display: block;
+        margin-top: 8px;
+        color: #cbd5e1;
+        font-size: 12px;
       }
 
       button {
@@ -175,6 +201,11 @@
 
       <aside id="sidebar">
         <div class="panel">
+          <h3>Unité sélectionnée</h3>
+          <div id="selectedInfo">Aucune</div>
+        </div>
+
+        <div class="panel">
           <h3>Joueurs</h3>
           <ul id="playersList"></ul>
         </div>
@@ -198,6 +229,7 @@
       const mapGrid = document.getElementById('mapGrid');
       const unitsLayer = document.getElementById('unitsLayer');
       const playersList = document.getElementById('playersList');
+      const selectedInfo = document.getElementById('selectedInfo');
 
       const mapCatalog = {
         generals_arena: {
@@ -216,47 +248,36 @@
             ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
             ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass']
           ]
-        },
-        delta_ridge: {
-          name: 'Delta Ridge',
-          tiles: [
-            ['grass','grass','grass','grass','forest','forest','forest','grass','grass','grass','grass','grass'],
-            ['road','road','road','road','road','road','road','road','road','road','grass','grass'],
-            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
-            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
-            ['grass','grass','grass','grass','forest','forest','forest','grass','grass','road','grass','grass'],
-            ['grass','grass','grass','road','road','base','base','road','road','road','grass','grass'],
-            ['grass','grass','grass','road','road','road','road','road','road','road','grass','grass'],
-            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
-            ['grass','grass','forest','forest','water','water','water','forest','grass','road','grass','grass'],
-            ['grass','grass','grass','grass','forest','forest','forest','grass','grass','road','grass','grass'],
-            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass'],
-            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','grass','grass']
-          ]
-        },
-        iron_harbor: {
-          name: 'Iron Harbor',
-          tiles: [
-            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','forest','forest'],
-            ['grass','forest','grass','grass','grass','road','road','grass','grass','grass','forest','forest'],
-            ['grass','grass','water','grass','road','road','road','road','grass','grass','grass','grass'],
-            ['grass','grass','water','grass','road','road','road','road','grass','grass','grass','grass'],
-            ['grass','grass','grass','rock','rock','road','road','rock','rock','grass','grass','grass'],
-            ['road','road','road','road','road','base','base','road','road','road','road','road'],
-            ['grass','grass','grass','rock','rock','road','road','rock','rock','grass','grass','grass'],
-            ['grass','grass','grass','grass','road','road','road','road','grass','grass','water','grass'],
-            ['grass','grass','grass','grass','road','road','road','road','grass','grass','water','grass'],
-            ['grass','forest','grass','grass','grass','road','road','grass','forest','grass','grass','grass'],
-            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','forest','forest'],
-            ['grass','grass','grass','grass','grass','road','road','grass','grass','grass','forest','forest']
-          ]
         }
       };
+
+      const players = [
+        { username: 'Joueur 1', team: 'blue', army: 'US', color: 'blue' },
+        { username: 'Joueur 2', team: 'red', army: 'China', color: 'red' }
+      ];
+
+      const units = [
+        { id: 'u1', name: 'Alpha', team: 'blue', color: 'blue', type: 'infantry', hp: 100, maxHp: 100, x: 90, y: 120, speed: 42, range: 42, targetId: null },
+        { id: 'u2', name: 'Bravo', team: 'blue', color: 'blue', type: 'infantry', hp: 90, maxHp: 90, x: 150, y: 220, speed: 42, range: 42, targetId: null },
+        { id: 'u3', name: 'Charlie', team: 'red', color: 'red', type: 'tank', hp: 120, maxHp: 120, x: 760, y: 470, speed: 38, range: 58, targetId: null },
+        { id: 'u4', name: 'Delta', team: 'red', color: 'red', type: 'infantry', hp: 82, maxHp: 82, x: 690, y: 540, speed: 43, range: 42, targetId: null }
+      ];
+
+      let selectedUnitId = null;
+      let lastTime = 0;
 
       function renderMap() {
         const currentMap = mapCatalog[selectedMapId] || mapCatalog.generals_arena;
         mapName.textContent = currentMap.name;
-        mapGrid.innerHTML = currentMap.tiles.flatMap((row) => row.map((tile) => `<div class="tile ${tile}"></div>`)).join('');
+        mapGrid.innerHTML = currentMap.tiles.flatMap((row) =>
+          row.map((tile) => `<div class="tile ${tile}"></div>`)
+        ).join('');
+      }
+
+      function renderPlayers() {
+        playersList.innerHTML = players.map((p) =>
+          `<li><span>${p.username}</span><span>${p.team}</span></li>`
+        ).join('');
       }
 
       function formatHeure(totalSeconds) {
@@ -274,74 +295,140 @@
         }, 1000);
       }
 
-      function renderPlayers(room) {
-        const players = room && room.players ? [...room.players.values()] : [
-          { username: 'Joueur 1', team: 'blue', army: 'US', color: 'blue' },
-          { username: 'Joueur 2', team: 'red', army: 'China', color: 'red' }
-        ];
+      function getUnitById(id) {
+        return units.find((u) => u.id === id) || null;
+      }
 
-        playersList.innerHTML = players.map((player) => {
-          const color = {
-            blue: '#38bdf8',
-            red: '#f87171',
-            green: '#34d399',
-            gold: '#fbbf24'
-          }[player.color] || '#38bdf8';
+      function getNearestEnemy(unit) {
+        let nearest = null;
+        let best = Infinity;
 
-          return `
-            <li>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="width:18px;height:18px;border-radius:50%;background:${color};display:inline-block;"></span>
-                <span>${player.username || 'Joueur'}</span>
-              </div>
-              <span>${player.army || 'US'} / ${player.team || 'blue'}</span>
-            </li>
-          `;
-        }).join('');
+        for (const other of units) {
+          if (other.id === unit.id) continue;
+          if (other.team === unit.team) continue;
+          const dist = Math.hypot(other.x - unit.x, other.y - unit.y);
+          if (dist < best) {
+            best = dist;
+            nearest = other;
+          }
+        }
+
+        return nearest;
+      }
+
+      function updateSelectedInfo() {
+        const unit = getUnitById(selectedUnitId);
+        if (!unit) {
+          selectedInfo.textContent = 'Aucune';
+          return;
+        }
+
+        selectedInfo.innerHTML = `
+          <strong>${unit.name}</strong><br />
+          Type: ${unit.type}<br />
+          Team: ${unit.team}<br />
+          HP: ${unit.hp}/${unit.maxHp}<br />
+          Position: ${Math.round(unit.x)}, ${Math.round(unit.y)}
+        `;
+      }
+
+      function updateUnits() {
+        for (const unit of units) {
+          const enemy = getNearestEnemy(unit);
+          if (!enemy) continue;
+
+          const dx = enemy.x - unit.x;
+          const dy = enemy.y - unit.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist <= unit.range) {
+            unit.hp -= 12 * (1 / 60);
+            enemy.hp -= 10 * (1 / 60);
+            if (enemy.hp <= 0) {
+              const idx = units.indexOf(enemy);
+              if (idx >= 0) units.splice(idx, 1);
+            }
+          } else {
+            const angle = Math.atan2(dy, dx);
+            unit.x += Math.cos(angle) * unit.speed * (1 / 60);
+            unit.y += Math.sin(angle) * unit.speed * (1 / 60);
+          }
+        }
+
+        for (let i = units.length - 1; i >= 0; i--) {
+          if (units[i].hp <= 0) units.splice(i, 1);
+        }
+
+        renderUnits();
+        updateSelectedInfo();
       }
 
       function renderUnits() {
-        const units = [
-          { x: 18, y: 22, color: '#38bdf8', label: 'A1', me: true, name: 'Alpha' },
-          { x: 52, y: 70, color: '#f87171', label: 'E1', me: false, name: 'Enemy' },
-          { x: 68, y: 38, color: '#4ade80', label: 'A2', me: true, name: 'Bravo' }
-        ];
+        unitsLayer.innerHTML = units.map((u) => {
+          const selected = selectedUnitId === u.id ? 'selected' : '';
+          const hpPercent = (u.hp / u.maxHp) * 100;
+          return `
+            <div class="unit ${u.color} ${selected}" style="left:${u.x}px; top:${u.y}px;" data-unit-id="${u.id}">
+              <span>${u.type === 'tank' ? 'T' : 'I'}</span>
+              <span class="name">${u.name}</span>
+              <span class="hp" style="width:${Math.max(26, hpPercent * 0.6)}px; text-align:center;">${Math.ceil(u.hp)}</span>
+            </div>
+          `;
+        }).join('');
 
-        unitsLayer.innerHTML = units.map((u) => `
-          <div class="unit ${u.me ? 'me' : 'enemy'}" style="left:${u.x}%; top:${u.y}%; background:${u.color};">
-            <span>${u.label}</span>
-            <span class="name">${u.name}</span>
-          </div>
-        `).join('');
+        document.querySelectorAll('.unit').forEach((el) => {
+          el.addEventListener('click', (event) => {
+            event.stopPropagation();
+            selectedUnitId = el.dataset.unitId;
+            updateSelectedInfo();
+            renderUnits();
+          });
+        });
+      }
+
+      function onBattlefieldClick(event) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        if (!selectedUnitId) return;
+
+        const unit = getUnitById(selectedUnitId);
+        if (!unit) return;
+
+        unit.x = x;
+        unit.y = y;
+        renderUnits();
+        updateSelectedInfo();
+      }
+
+      document.getElementById('battlefield').addEventListener('click', onBattlefieldClick);
+
+      function gameLoop(ts) {
+        if (!lastTime) lastTime = ts;
+        const delta = (ts - lastTime) / 1000;
+        lastTime = ts;
+
+        updateUnits(delta);
+        requestAnimationFrame(gameLoop);
       }
 
       renderMap();
-      startHeureH();
       renderPlayers();
+      startHeureH();
       renderUnits();
+      updateSelectedInfo();
+      requestAnimationFrame(gameLoop);
 
       const ws = new WebSocket('ws://localhost:3010');
-
       ws.addEventListener('open', () => {
-        if (userId) {
+        if (roomId && userId) {
           ws.send(JSON.stringify({ type: 'register', userId, username: 'Joueur' }));
-        }
-
-        if (roomId) {
-          ws.send(JSON.stringify({ type: 'join-room', roomId, userId, username: 'Joueur' }));
-        }
-      });
-
-      ws.addEventListener('message', (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'joined-room' || data.type === 'room-update' || data.type === 'match-started') {
-          renderPlayers(data.room);
         }
       });
 
       document.getElementById('endMatchBtn').addEventListener('click', () => {
-        ws.send(JSON.stringify({ type: 'end-match', winnerId: userId }));
-        stateLabel.textContent = 'Partie terminée';
+        ws.send(JSON.stringify({ type: 'end-match', winnerId: userId || 'local' }));
       });
     </script>
   </body>
