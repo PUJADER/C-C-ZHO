@@ -61,7 +61,7 @@ export function roadChains(segs, tol = 3) {
     const gi = Math.floor(x / tol), gj = Math.floor(y / tol);
     for (let di = -1; di <= 1; di++) for (let dj = -1; dj <= 1; dj++)
       for (const n of grid.get(key(gi + di, gj + dj)) ?? []) if (Math.hypot(n.x - x, n.y - y) < tol) { n.fl |= fl; return n; }
-    const n = { x, y, fl, edges: [] }; nodes.push(n);
+    const n = { id: nodes.length, x, y, fl, edges: [] }; nodes.push(n);
     const k = key(gi, gj); (grid.get(k) ?? grid.set(k, []).get(k)).push(n); return n;
   };
   const edges = [];
@@ -93,7 +93,15 @@ export function roadChains(segs, tol = 3) {
     if (used.has(e0)) continue;
     const fwd = walk(e0, e0.a), back = walk(e0, e0.b).reverse(); // fwd : b, b2... ; back : ...a2, a
     const ns = [...back, ...fwd];
-    if (ns.length >= 2) chains.push({ pts: ns.map(n => [n.x, n.y, n.fl]), closed: ns[0] === ns[ns.length - 1], ends: [ns[0].edges.length, ns[ns.length - 1].edges.length] }); // ends : nombre de segments à chaque bout (1 = bout libre, ≥ 3 = T / carrefour)
+    if (ns.length >= 2) chains.push({ pts: ns.map(n => [n.x, n.y, n.fl, n.id]), closed: ns[0] === ns[ns.length - 1], ends: [ns[0].edges.length, ns[ns.length - 1].edges.length] }); // ends : nombre de segments à chaque bout (1 = bout libre, ≥ 3 = T / carrefour)
+  }
+  // Raccords (nœuds à 3 ou 4 branches) : voisins, directions sortantes et longueurs, pour poser les pièces T / Y / carrefour de l'atlas (client/road-atlas.js)
+  chains.junctions = [];
+  for (const n of nodes) {
+    if (n.edges.length !== 3 && n.edges.length !== 4) continue;
+    const nbr = n.edges.map(e => other(e, n).id);
+    if (new Set(nbr).size !== nbr.length) continue; // deux segments vers le même voisin : cas ambigu, on ne pose rien
+    chains.junctions.push({ id: n.id, x: n.x, y: n.y, nbr, dirs: n.edges.map(e => dirOut(n, e)), lens: n.edges.map(e => { const m = other(e, n); return Math.hypot(m.x - n.x, m.y - n.y); }) });
   }
   return chains;
 }

@@ -7,6 +7,10 @@ import * as THREE from 'three';
 import { decodeTga, decodeDds } from '/terrain-tex.js';
 import { loadObjectModel, cloneModel, loadRawModel } from '/model-loader.js';
 import { findStraightBand, chooseTrack, roadChains, smoothPolyline, roadOrder, distToSeg } from '/features-core.js';
+import { analyzeAtlas, usablePieces, planJunctions, applyJunctions } from '/road-atlas.js';
+
+// Pièces de raccord (T, Y, carrefour) posées aux jonctions de routes. Désactivables pour comparer : ?junctions=0 dans l'adresse de la page.
+const JUNCTIONS = (() => { try { return new URLSearchParams(location.search).get('junctions') !== '0'; } catch { return true; } })();
 
 const texCache = new Map();
 // Texture de route : même recherche que le terrain (art/terrain, art/textures ; .tga / .dds). Le fichier est un ATLAS (route droite, virages, T,
@@ -25,8 +29,18 @@ function loadTex(name, frac = 0) {
     cv.getContext('2d').drawImage(full, 0, band.y0, img.width, bh, 0, 0, img.width, bh);
     const t = new THREE.CanvasTexture(cv);
     t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping; t.anisotropy = 4;
+    const atlasTex = new THREE.CanvasTexture(full); // l'atlas entier : sert aux pièces de raccord (la bande droite ci-dessus ne sert qu'aux rubans)
+    atlasTex.colorSpace = THREE.SRGBColorSpace; atlasTex.wrapS = atlasTex.wrapT = THREE.ClampToEdgeWrapping; atlasTex.anisotropy = 4;
+    let pieces = null; // analyse faite à la demande (une fois par texture) : pièces à 3 ou 4 branches de l'atlas
+    const getPieces = () => {
+      if (!pieces) {
+        try { pieces = usablePieces(analyzeAtlas(img, bh), bh); } catch (e) { console.warn(`[routes] ${key} : analyse de l'atlas impossible :`, e.message); pieces = []; }
+        console.info(`[routes] ${key} : ${pieces.length} pièce(s) de raccord`, pieces.map(p => `${p.kind}${p.arms.length}`).join(' '));
+      }
+      return pieces;
+    };
     console.info(`[routes] ${key} : atlas ${img.width}×${img.height}, bande droite lignes ${band.y0}-${band.y1}`);
-    return { tex: t, ratio: img.width / bh };
+    return { tex: t, ratio: img.width / bh, bandH: bh, W: img.width, H: img.height, atlasTex, pieces: getPieces };
   })().catch(e => { console.warn(`[routes] texture ${key} illisible :`, e.message); return null; }));
   return texCache.get(key);
 }
@@ -62,7 +76,14 @@ export async function loadMapFeatures({ scene, terrain, map, mapId, shouldAbort 
       // puis un seul ruban continu suit chaque tracé (coins en onglet, u continu : la texture ne se coupe pas dans les virages).
       const gsegs = segs.map(s => ({ a: toGame(s.a), b: toGame(s.b), fa: s.fa | 0, fb: s.fb | 0 }));
       const step = cell * 0.5, ext = hw * 0.6;
-      for (const ch of roadChains(gsegs, Math.max(2, hw * 0.4))) {
+      let chains = roadChains(gsegs, Math.max(2, hw * 0.4)), jplans = [];
+      if (JUNCTIONS && T && !def.rail && chains.junctions?.length) { // raccords : on remplace le chevauchement des rubans par la pièce de l'atlas qui colle (T, Y, carrefour)
+        try {
+          const pcs = T.pieces();
+          if (pcs.length) { jplans = planJunctions(chains.junctions, pcs, (2 * hw) / T.bandH, hw); if (jplans.length) chains = applyJunctions(chains, jplans, hw); }
+        } catch (e) { console.warn(`[routes] ${name} : raccords ignorés :`, e.message); jplans = []; chains = roadChains(gsegs, Math.max(2, hw * 0.4)); }
+      }
+      for (const ch of chains) {
         let line = smoothPolyline(ch.pts, hw);
         if (line.length < 2) continue;
         // bout libre (un seul segment, ne touche aucune autre route) : la route s'efface en douceur au lieu de s'arrêter net (pièce ALPHA_JOIN du moteur).
@@ -71,7 +92,8 @@ export async function loadMapFeatures({ scene, terrain, map, mapId, shouldAbort 
         const free1 = canFade && !ch.closed && ch.ends[1] === 1 && !touchesOther(line[line.length - 1], name, hw);
         if (!ch.closed) { // rallonge chaque bout raccordé pour recouvrir les raccords avec les tracés voisins (T, carrefours)
           const ext1 = (p, q) => { const l = Math.hypot(p[0] - q[0], p[1] - q[1]) || 1; return [p[0] + (p[0] - q[0]) / l * ext, p[1] + (p[1] - q[1]) / l * ext]; };
-          const first = free0 ? [] : [ext1(line[0], line[1])], last = free1 ? [] : [ext1(line[line.length - 1], line[line.length - 2])];
+          const ovl = (free, piece, p, q) => { if (free) return []; const l = Math.hypot(p[0] - q[0], p[1] - q[1]) || 1, e = piece ? hw * 0.06 : ext; return [[p[0] + (p[0] - q[0]) / l * e, p[1] + (p[1] - q[1]) / l * e]]; }; // bout sur une pièce de raccord : léger recouvrement seulement (pas de rallonge)
+          const first = ovl(free0, ch.pieceEnds?.[0], line[0], line[1]), last = ovl(free1, ch.pieceEnds?.[1], line[line.length - 1], line[line.length - 2]);
           line = [...first, ...line, ...last];
         }
         const dense = [line[0]]; // redécoupe en pas réguliers pour que le ruban épouse le relief
@@ -107,6 +129,24 @@ export async function loadMapFeatures({ scene, terrain, map, mapId, shouldAbort 
         transparent: true, vertexColors: true, alphaTest: 0.02, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 - rank, polygonOffsetUnits: -2 - rank }); // plus le rang est haut, plus le ruban est tiré vers la caméra
       const mesh = new THREE.Mesh(geo, mat); mesh.renderOrder = 2 + order * 0.1; mesh.name = `road:${name}`; // ordre explicite : terre < bitume < trottoir < rail < marquage
       group.add(mesh); live.stats[def.rail ? 'rails' : 'roads'] += segs.length;
+      if (jplans.length) { // pièces de raccord : un quad quadrillé par pièce, tendu sur le relief, texturé avec l'atlas entier
+        const pp = [], puv = [], pcol = [], pidx = [];
+        for (const pl of jplans) {
+          const b = pl.piece.box, x0 = Math.max(0, b.x0 - 1), y0 = Math.max(0, b.y0 - 1), x1 = Math.min(T.W, b.x1 + 1), y1 = Math.min(T.H, b.y1 + 1);
+          const nn = Math.max(2, Math.min(40, Math.ceil(Math.max(x1 - x0, y1 - y0) * pl.s / (cell * 0.5)))), base = pp.length / 3;
+          for (let j = 0; j <= nn; j++) for (let i = 0; i <= nn; i++) {
+            const px = x0 + (x1 - x0) * i / nn, py = y0 + (y1 - y0) * j / nn, [wx, wy] = pl.to(px, py);
+            pp.push(wx, terrain.at(wx, wy) + 0.35 * k, -wy); puv.push(px / T.W, 1 - py / T.H); pcol.push(1, 1, 1, 1);
+          }
+          for (let j = 0; j < nn; j++) for (let i = 0; i < nn; i++) { const a = base + j * (nn + 1) + i; pidx.push(a, a + 1, a + nn + 1, a + 1, a + nn + 2, a + nn + 1); }
+        }
+        const pg = new THREE.BufferGeometry();
+        pg.setAttribute('position', new THREE.Float32BufferAttribute(pp, 3)); pg.setAttribute('uv', new THREE.Float32BufferAttribute(puv, 2)); pg.setAttribute('color', new THREE.Float32BufferAttribute(pcol, 4));
+        pg.setIndex(pidx); pg.computeVertexNormals();
+        const pm = new THREE.MeshStandardMaterial({ map: T.atlasTex, color: 0xffffff, roughness: 1, metalness: 0, transparent: true, vertexColors: true, alphaTest: 0.02, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 - rank, polygonOffsetUnits: -2 - rank });
+        const pmesh = new THREE.Mesh(pg, pm); pmesh.renderOrder = 2 + order * 0.1 + 0.05; pmesh.name = `junction:${name}`;
+        group.add(pmesh); live.stats.junctions = (live.stats.junctions ?? 0) + jplans.length;
+      }
     }
   }
 
