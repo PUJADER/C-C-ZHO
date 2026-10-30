@@ -1,0 +1,41 @@
+/* Salle d'attente (room.js) — même identité visuelle que lobby.html */
+#room { position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; overflow: auto; user-select: text;
+  background: radial-gradient(circle at top, #12253a, #0d1117 70%); color: #dfe6ee; }
+#room .rm-shell { width: min(1180px, 100%); margin: 0 auto; padding: 18px 22px 90px; box-sizing: border-box; }
+#room header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+#room h1 { margin: 0; font-size: 1.6rem; } #room h1 small { color: #00f0ff; font-weight: 400; font-size: .5em; margin-left: 8px; letter-spacing: .08em; }
+#room .code { font-family: ui-monospace, Consolas, monospace; color: #ffd75a; font-size: 1.1rem; letter-spacing: .15em; }
+#room .rm-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 900px) { #room .rm-grid { grid-template-columns: 1fr; } }
+#room .panel { background: rgba(12,18,26,.8); border: 1px solid #38536e; border-left: 3px solid #00f0ff; border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+#room .panel h2 { margin: 0 0 10px; font-size: .85rem; color: #00f0ff; text-transform: uppercase; letter-spacing: .07em; display: flex; justify-content: space-between; }
+#room .panel h2 small { color: #8aa0b5; text-transform: none; letter-spacing: 0; font-weight: 400; }
+#room label { display: flex; flex-direction: column; gap: 3px; color: #8aa0b5; font-size: 12px; }
+#room select, #room input, #room button { font: inherit; border-radius: 6px; border: 1px solid #38536e; padding: 7px 9px; background: #0a1018; color: #dfe6ee; }
+#room button { background: #182533; cursor: pointer; font-weight: 600; }
+#room button:hover:not(:disabled) { border-color: #00f0ff; color: #00f0ff; }
+#room select:disabled, #room button:disabled { opacity: .45; cursor: not-allowed; }
+#room .cfg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+#rmColors { display: flex; flex-wrap: wrap; gap: 7px; }
+#room .sw { width: 30px; height: 30px; padding: 0; border-radius: 50%; background: var(--c); border: 2px solid #1b2a3a; }
+#room .sw.mine { border-color: #fff; box-shadow: 0 0 0 2px var(--c); } #room .sw.taken { opacity: .25; } #room .sw:hover:not(:disabled) { transform: scale(1.12); border-color: #fff; }
+#room table { width: 100%; border-collapse: collapse; } #room th, #room td { text-align: left; padding: 7px 6px; border-bottom: 1px solid #22364a; vertical-align: middle; }
+#room th { color: #8aa0b5; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+#room tr.me td { background: rgba(0,240,255,.06); } #room tr.free td { color: #5d7389; font-style: italic; }
+#room .dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: #182533; border: 1px solid #4a6a88; vertical-align: middle; }
+#room td.nm { font-weight: 600; } #room small { color: #8aa0b5; font-weight: 400; }
+#room .tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+#room .tag.host { background: #ffd75a22; color: #ffd75a; } #room .tag.ok { background: #5cd68a22; color: #5cd68a; } #room .tag.wait { background: #ffffff10; color: #8aa0b5; }
+#room button.x { padding: 1px 7px; color: #ff8a8a; } #rmSpecs { margin-top: 8px; color: #8aa0b5; font-size: 12px; }
+#rmMapBox { position: relative; width: 100%; max-width: 330px; margin: 10px auto 0; }
+#rmSlotMap { width: 100%; aspect-ratio: 1; border: 1px solid #38536e; border-radius: 6px; background: #0a1018; cursor: pointer; display: block; }
+#rmNoMap { position: absolute; inset: 0; align-items: center; justify-content: center; text-align: center; color: #5d7389; padding: 20px; pointer-events: none; }
+#rmMapName { font-weight: 700; font-size: 1.05rem; } #rmMapInfo { color: #8aa0b5; font-size: 12px; margin-top: 2px; }
+#rmChatLog { height: 180px; overflow-y: auto; border: 1px solid #38536e; border-radius: 6px; padding: 6px 8px; background: #0a1018; font-size: 13px; }
+#rmChatLog .sys { color: #7e93a8; font-style: italic; }
+#room .row { display: flex; gap: 8px; margin-top: 8px; } #room .row input { flex: 1; min-width: 0; }
+#room footer { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; padding: 12px 18px; background: rgba(8,12,18,.96); border-top: 1px solid #38536e; }
+#rmStatus { color: #8aa0b5; flex: 1 1 260px; text-align: right; } #rmStatus.go { color: #5cd68a; font-weight: 600; }
+#room footer button { padding: 11px 26px; font-size: 15px; }
+#rmReady.on { background: #0f4a2c; border-color: #5cd68a; color: #5cd68a; } #rmStart:not(:disabled) { background: #0b4a52; border-color: #00f0ff; color: #fff; }
+#rmCountdown { position: fixed; inset: 0; z-index: 2; display: none; align-items: center; justify-content: center; font-size: 160px; font-weight: 800; color: #fff; text-shadow: 0 0 40px #00f0ff; background: rgba(8,12,18,.7); }

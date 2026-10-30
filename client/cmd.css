@@ -1,0 +1,269 @@
+/* ============================================================================
+   BARRE DE COMMANDES (panneau #cmd)
+   ----------------------------------------------------------------------------
+   Ce fichier est la SEULE source de style du panneau : game.html ne doit plus
+   contenir de règle #cmd (sinon elles se marchent dessus).
+
+   La disposition est pilotée par une classe posée sur #cmd par game.js :
+     #cmd.h  -> barre HORIZONTALE en bas de l'écran, boutons sur une rangée
+     #cmd.v  -> colonne VERTICALE à droite de l'écran, boutons sur une colonne
+     #cmd.compact -> masque les emplacements vides (les boutons se serrent)
+     #cmd.mini    -> réduit le panneau à son en-tête
+
+   Astuce : pour changer la forme de la grille, c'est ici qu'on joue.
+     - une seule RANGÉE  : grid-auto-flow: column + grid-auto-columns
+     - une seule COLONNE : grid-template-columns: <1 valeur> + grid-auto-rows
+   ============================================================================ */
+
+/* ---------- Conteneur principal ---------- */
+#cmd {
+  --accent-cyan: #00f0ff;
+  --accent-gold: #ffd75a;
+  --accent-green: #5cd68a;
+  --accent-red: #ff5555;
+  --border-color: #38536e;
+  --button-bg: #182533;
+  position: fixed;
+  z-index: 5;
+  display: none;            /* game.js l'affiche (display:flex) quand un bâtiment est sélectionné */
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+  padding: 8px;
+  background: rgba(12, 18, 26, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 240, 255, 0.08);
+  pointer-events: auto;
+  font-family: system-ui, sans-serif;
+  color: #dfe6ee;
+}
+
+/* ---------- Disposition HORIZONTALE (barre en bas, comme C&C) ---------- */
+#cmd.h {
+  left: 50%;
+  bottom: 15px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 20px);
+}
+
+/* ---------- Disposition VERTICALE (colonne à droite) ---------- */
+#cmd.v {
+  right: 12px;
+  top: 50%;
+  bottom: auto;
+  transform: translateY(-50%);
+  max-height: calc(100vh - 24px);
+  max-width: 220px;
+}
+/* En colonne, le nom du bâtiment passe sur sa propre ligne */
+#cmd.v .head { flex-wrap: wrap; row-gap: 4px; }
+#cmd.v .head b { flex: 1 0 100%; }
+#cmd.v .head .hp { margin-left: 0; }
+
+/* ---------- En-tête (nom du bâtiment + PV + petits boutons) ---------- */
+#cmd .head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(24, 37, 51, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: move;             /* le panneau se déplace par sa barre de titre */
+}
+#cmd .head b { font-size: 14px; color: var(--accent-cyan); }
+#cmd .head .hp { margin-left: auto; opacity: 0.8; font-size: 12px; }
+
+/* Petits boutons de l'en-tête : disposition / compactage / réduction */
+#cmd .head .mini {
+  background: #1d2a36;
+  color: #dfe6ee;
+  border: 1px solid #4a6a88;
+  border-radius: 4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+#cmd .head .mini:hover { border-color: #6cf; background: #2b4258; color: #fff; }
+
+/* ---------- File de production ---------- */
+#cmd .queue {
+  display: flex;
+  gap: 4px;
+  min-height: 36px;
+  background: rgba(14, 22, 30, 0.6);
+  border: 1px solid #36506a;
+  border-radius: 5px;
+  padding: 4px;
+  overflow-x: auto;
+}
+#cmd .queue:empty { display: none; }
+
+/* Éléments de la file */
+#cmd .qi {
+  position: relative;
+  width: 92px;
+  height: 34px;
+  border: 1px solid #4a6a88;
+  border-radius: 4px;
+  background: var(--button-bg);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 34px;
+  text-align: center;
+  color: #dfe6ee;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+#cmd .qi:hover { border-color: var(--accent-red); background: #322; }
+#cmd .qi i { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--accent-green); }
+#cmd .qi.up { border-color: var(--accent-gold); }
+
+/* ---------- Grille de boutons (bâtiments / unités à produire) ----------
+   14 emplacements (SLOTS dans game.js) : un par position du CommandSet INI.
+   Les <i> sont des emplacements vides : ils gardent la place (fidèle à C&C)
+   mais ne se voient pas. En mode "compact" ils disparaissent et les boutons
+   se serrent les uns contre les autres.                                        */
+#cmd .grid {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(7, 100px);   /* 7 colonnes x 2 lignes */
+  grid-auto-rows: 56px;
+  min-height: 0;                              /* autorise le défilement en colonne */
+}
+#cmd .grid > i { visibility: hidden; height: 56px; }
+#cmd.compact .grid > i { display: none; }     /* emplacements vides masqués */
+
+/* --- Grille en mode HORIZONTAL : une seule rangée --- */
+#cmd.h .grid {
+  grid-auto-flow: column;      /* on remplit en colonnes => une seule rangée */
+  grid-template-columns: none; /* ...donc aucune colonne imposée */
+  grid-auto-columns: 100px;    /* largeur d'un bouton */
+  grid-auto-rows: 56px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* --- Grille en mode VERTICAL : une seule colonne --- */
+#cmd.v .grid {
+  grid-auto-flow: row;          /* remplissage ligne par ligne (une colonne) */
+  grid-template-columns: 100px; /* une seule colonne */
+  grid-auto-rows: 56px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* En mode vertical la file de production s'empile aussi */
+#cmd.v .queue { flex-direction: column; min-height: 0; }
+#cmd.v .qi { width: 100%; }
+
+/* ---------- Style de chaque bouton d'action (.b) ---------- */
+#cmd .b {
+  position: relative;
+  background: var(--button-bg);
+  color: #dfe6ee;
+  border: 1px solid #4a6a88;
+  border-radius: 6px;
+  padding: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+#cmd .b:hover:not(:disabled) {
+  background: #253a4f;
+  border-color: var(--accent-cyan);
+  transform: translateY(-1px);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+#cmd .b:disabled { opacity: 0.4; cursor: not-allowed; }
+#cmd .b .n { font-weight: 600; color: var(--accent-gold); }
+#cmd .b .c { opacity: 0.85; display: flex; justify-content: space-between; font-size: 10px; }
+#cmd .b .c em { font-style: normal; color: var(--accent-gold); font-weight: bold; }
+
+/* ---------- États particuliers des boutons ---------- */
+#cmd .b.upg { border-color: var(--accent-gold); }
+#cmd .b.pwr { border-color: #6aa6e6; }
+#cmd .b.sys { border-color: #888; }
+#cmd .b.done { border-color: var(--accent-green); background: #11261a; }
+#cmd .b.done::after { content: '✓'; position: absolute; top: 3px; right: 6px; color: var(--accent-green); font-weight: bold; }
+#cmd .b.on { border-color: #fff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4) inset; background: #23415e; }
+#cmd .b.busy { background: #3a3020; }
+#cmd .b .bar { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--accent-green); width: 0; }
+
+/* ---------- Panneau réduit (mode mini) ---------- */
+#cmd.mini { padding: 4px; gap: 0; }
+#cmd.mini .queue, #cmd.mini .grid { display: none !important; }
+
+@media (max-width: 900px) {
+  #cmd .grid { grid-template-columns: repeat(7, 80px); }
+  #cmd.h .grid { grid-auto-columns: 80px; }
+  #cmd.v .grid { grid-template-columns: 80px; }
+}
+
+/* ---------- Emplacements d'un conteneur (garnison / transport / tunnel) ---------- */
+#cmd .slots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(14, 22, 30, 0.6);
+  border: 1px solid #36506a;
+  border-radius: 5px;
+  padding: 5px;
+}
+#cmd .slotbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; }
+#cmd .slotrow { display: flex; flex-wrap: wrap; gap: 4px; }
+#cmd .slot {
+  width: 54px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px dashed #4a6a88;
+  border-radius: 4px;
+  background: rgba(24, 37, 51, 0.5);
+  font-size: 10px;
+  line-height: 30px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+}
+#cmd .slot.full { border-style: solid; border-color: var(--accent-green); background: #1d3a2b; cursor: pointer; }
+#cmd .slot.full:hover { border-color: var(--accent-red); background: #3a2020; }
+#cmd .slot.cont { border-left-color: transparent; color: transparent; }
+#cmd .evac {
+  padding: 4px 12px;
+  border: 1px solid var(--accent-cyan);
+  border-radius: 5px;
+  background: #0b4a52;
+  color: #dfe6ee;
+  font-weight: 600;
+  cursor: pointer;
+}
+#cmd .evac:disabled { opacity: 0.4; cursor: not-allowed; }
+#cmd.v .slotrow { max-width: 200px; }
+
+
+/* ---------- Cameos (images MappedImage des boutons, de la file et portrait) ---------- */
+#cmd .b.has-cameo, #cmd .qi.has-cameo { background-size: cover; background-position: center; background-repeat: no-repeat; }
+#cmd .b.has-cameo .n { position: absolute; left: 0; right: 0; top: 0; padding: 2px 5px; background: rgba(0, 0, 0, 0.6); opacity: 0; transition: opacity 0.15s; }
+#cmd .b.has-cameo:hover .n { opacity: 1; }
+#cmd .b.has-cameo .c { position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 5px 3px; background: linear-gradient(transparent, rgba(0, 0, 0, 0.8)); }
+#cmd .qi.has-cameo { font-size: 0; }               /* la file affiche le cameo seul (le nom reste dans l'infobulle) */
+#cmd .head .portrait { display: none; }
+#cmd .head .portrait.on { display: block; width: 48px; height: 38px; border: 1px solid #4a6a88; border-radius: 4px; background-size: cover; background-position: center; margin-right: 6px; }

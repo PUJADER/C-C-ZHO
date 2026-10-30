@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zero Hour Online — Lobby</title>
+<style>
+  :root { --bg:#0d1117; --panel:rgba(12,18,26,.88); --line:#38536e; --cyan:#00f0ff; --gold:#ffd75a; --green:#5cd68a; --red:#ff5555; --muted:#8aa0b5; --btn:#182533; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:radial-gradient(circle at top,#12253a,var(--bg)); color:#dfe6ee; font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  #shell { max-width:980px; margin:0 auto; padding:24px; }
+  header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px; }
+  h1 { margin:0; font-size:1.7rem; letter-spacing:.02em; }
+  h1 small { color:var(--cyan); font-weight:400; font-size:.55em; margin-left:8px; }
+  #conn { font-size:12px; padding:4px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+  #conn.ok { color:var(--green); border-color:var(--green); }
+  #conn.ko { color:var(--red); border-color:var(--red); }
+  .panel { backdrop-filter:blur(6px); background:rgba(12,18,26,.74); border:1px solid var(--line); border-left:3px solid var(--cyan); border-radius:8px; padding:16px; margin-bottom:16px; }
+  .panel h2 { margin:0 0 12px; font-size:1rem; color:var(--cyan); text-transform:uppercase; letter-spacing:.06em; }
+  .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  label { color:var(--muted); font-size:12px; display:flex; flex-direction:column; gap:3px; }
+  input, select, button { font:inherit; border-radius:6px; border:1px solid var(--line); padding:8px 10px; background:#0a1018; color:#dfe6ee; }
+  button { background:var(--btn); cursor:pointer; font-weight:600; }
+  button:hover:not(:disabled) { border-color:var(--cyan); color:var(--cyan); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  button.primary { background:#0b4a52; border-color:var(--cyan); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:9px 8px; border-bottom:1px solid #22364a; vertical-align:middle; }
+  th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  td.code { font-family:ui-monospace,Consolas,monospace; color:var(--gold); }
+  td .names { color:var(--muted); font-size:12px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; text-transform:uppercase; }
+  .badge.lobby { background:#5cd68a22; color:var(--green); }
+  .badge.playing { background:#ff555522; color:var(--red); }
+  .badge.ended { background:#ffd75a22; color:var(--gold); }
+  #empty { color:var(--muted); padding:14px 4px; }
+  #bgvid { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; z-index:-2; opacity:0; transition:opacity 1.5s; }
+  #bgvid.on { opacity:1; }
+  #veil { position:fixed; inset:0; z-index:-1; background:radial-gradient(circle at top, rgba(13,17,23,.25), rgba(13,17,23,.8)); }
+  #media { position:fixed; right:14px; bottom:14px; display:none; align-items:center; gap:8px; padding:6px 10px; background:var(--panel); border:1px solid var(--line); border-radius:999px; }
+  #media button { padding:4px 10px; border-radius:999px; }
+  #media input[type=range] { width:90px; padding:0; accent-color:var(--cyan); }
+  #mTitle { max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; color:var(--muted); }
+  #mHint { position:fixed; left:14px; bottom:14px; font-size:12px; color:var(--muted); max-width:420px; }
+  #toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#2b0f12; border:1px solid var(--red); color:#ffb3b3; padding:10px 16px; border-radius:8px; display:none; }
+</style>
+</head>
+<body>
+<video id="bgvid" muted playsinline preload="auto"></video>
+<div id="veil"></div>
+<audio id="music" preload="auto"></audio>
+<div id="shell">
+  <header>
+    <h1>Zero Hour Online <small>LOBBY</small></h1>
+    <span id="conn">Connexion…</span>
+  </header>
+
+  <section class="panel">
+    <h2>Joueur</h2>
+    <div class="row">
+      <label>Pseudo <input id="name" maxlength="24" placeholder="Ton pseudo" style="width:220px"></label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Créer une room</h2>
+    <div class="row">
+      <label>Nom de la room <input id="roomName" maxlength="40" value="Ma partie" style="width:260px"></label>
+      <label>Joueurs max
+        <select id="roomMax"></select>
+      </label>
+      <button id="create" class="primary" style="align-self:flex-end">Créer et entrer</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Rooms ouvertes</h2>
+    <div id="empty">Aucune room ouverte pour l'instant. Crées-en une !</div>
+    <table id="tbl" style="display:none">
+      <thead><tr><th>Code</th><th>Room</th><th>Hôte</th><th>Joueurs</th><th>État</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="row" style="margin-top:14px">
+      <label>Rejoindre par code <input id="code" maxlength="4" placeholder="ABCD" style="width:100px;text-transform:uppercase"></label>
+      <button id="joinCode" style="align-self:flex-end">Rejoindre</button>
+    </div>
+  </section>
+</div>
+<div id="media">
+  <button id="mPlay" title="Musique on/off">🔊</button>
+  <input id="mVol" type="range" min="0" max="100" value="40" title="Volume">
+  <button id="mNext" title="Piste suivante">⏭</button>
+  <span id="mTitle"></span>
+</div>
+<div id="mHint"></div>
+<div id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const PHASE = { lobby: 'En attente', playing: 'En cours', ended: 'Terminée' };
+$('roomMax').innerHTML = [2, 3, 4, 5, 6, 7, 8].map(n => `<option value="${n}"${n === 8 ? ' selected' : ''}>${n}</option>`).join('');
+$('name').value = localStorage.getItem('zho-name') || '';
+
+let ws, retry = 0, rooms = [];
+const myName = () => {
+  const n = $('name').value.trim() || `Joueur${Math.floor(Math.random() * 900 + 100)}`;
+  $('name').value = n; localStorage.setItem('zho-name', n); return n;
+};
+function toast(t) { const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => { el.style.display = 'none'; }, 3500); }
+function enter(id) { location.href = `/game.html?room=${encodeURIComponent(id)}&name=${encodeURIComponent(myName())}`; }
+const send = o => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+
+function render() {
+  $('empty').style.display = rooms.length ? 'none' : 'block';
+  $('tbl').style.display = rooms.length ? 'table' : 'none';
+  const tb = $('rows'); tb.innerHTML = '';
+  for (const r of rooms) {
+    const tr = document.createElement('tr');
+    const cell = (text, cls) => { const td = document.createElement('td'); if (cls) td.className = cls; td.textContent = text; tr.appendChild(td); return td; };
+    cell(r.id, 'code'); cell(r.name); cell(r.host ?? '—');
+    const tdP = cell(`${r.players}/${r.max}`);
+    if (r.names.length) { const d = document.createElement('div'); d.className = 'names'; d.textContent = r.names.join(', '); tdP.appendChild(d); }
+    const tdS = document.createElement('td'); const b = document.createElement('span');
+    b.className = `badge ${r.phase}`; b.textContent = PHASE[r.phase] ?? r.phase; tdS.appendChild(b); tr.appendChild(tdS);
+    const tdA = document.createElement('td'); tdA.style.textAlign = 'right';
+    const btn = document.createElement('button');
+    const full = r.phase !== 'playing' && r.players >= r.max;
+    btn.textContent = r.phase === 'playing' ? 'Observer' : full ? 'Pleine (observer)' : 'Rejoindre';
+    btn.onclick = () => enter(r.id);
+    tdA.appendChild(btn); tr.appendChild(tdA);
+    tb.appendChild(tr);
+  }
+}
+
+function connect() {
+  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+  ws.onopen = () => { retry = 0; $('conn').textContent = 'Connecté'; $('conn').className = 'ok'; };
+  ws.onclose = () => {
+    $('conn').textContent = 'Déconnecté — reconnexion…'; $('conn').className = 'ko';
+    setTimeout(connect, Math.min(1000 * ++retry, 5000));
+  };
+  ws.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.t === 'rooms') { rooms = m.rooms; render(); }
+    else if (m.t === 'created') enter(m.id);
+    else if (m.t === 'error') toast(m.msg);
+  };
+}
+
+$('create').onclick = () => {
+  const name = $('roomName').value.trim();
+  if (!name) return toast('Donne un nom à la room');
+  myName(); send({ t: 'create', name, max: Number($('roomMax').value) });
+};
+$('joinCode').onclick = () => { const c = $('code').value.trim().toUpperCase(); if (c.length === 4) enter(c); else toast('Le code fait 4 caractères'); };
+$('code').addEventListener('keydown', e => { if (e.key === 'Enter') $('joinCode').click(); });
+$('roomName').addEventListener('keydown', e => { if (e.key === 'Enter') $('create').click(); });
+
+connect();
+
+// ---------- vidéos de fond + musique (lues dans les fichiers du jeu via /api/media) ----------
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const niceName = u => { try { return decodeURIComponent(u.split('/').pop()).replace(/\.[^.]+$/, ''); } catch { return u; } };
+async function initMedia() {
+  let info;
+  try { info = await (await fetch('/api/media')).json(); } catch { return; }
+  const vids = shuffle(info.videos), tracks = shuffle(info.music);
+
+  if (vids.length) {
+    const bg = $('bgvid'); let vi = 0, fails = 0;
+    const nextVid = () => { bg.classList.remove('on'); bg.src = vids[vi++ % vids.length]; bg.play().catch(() => {}); };
+    bg.onplaying = () => { fails = 0; bg.classList.add('on'); };
+    bg.onended = nextVid;
+    bg.onerror = () => { if (++fails < vids.length) nextVid(); }; // fichier illisible : on passe au suivant
+    nextVid();
+  } else if (info.bik) {
+    $('mHint').textContent = `${info.bik} vidéo(s) .bik trouvée(s) mais illisibles par le navigateur : lance « node tools/convert-movies.mjs » (ffmpeg) puis recharge la page.`;
+  }
+
+  if (tracks.length) {
+    const au = $('music'); let ti = 0, wantOn = localStorage.getItem('zho-music') !== 'off';
+    au.volume = Number(localStorage.getItem('zho-vol') ?? 40) / 100; $('mVol').value = Math.round(au.volume * 100);
+    $('media').style.display = 'flex';
+    const refresh = () => { $('mPlay').textContent = wantOn && !au.paused ? '🔊' : '🔇'; };
+    const nextTrack = () => { au.src = tracks[ti++ % tracks.length]; $('mTitle').textContent = niceName(au.src); if (wantOn) au.play().then(refresh, refresh); };
+    au.onended = nextTrack;
+    au.onerror = () => { if (tracks.length > 1) nextTrack(); };
+    au.onplay = au.onpause = refresh;
+    nextTrack();
+    // Les navigateurs bloquent le son avant un premier geste : on démarre au premier clic / touche.
+    const unlock = () => { if (wantOn && au.paused) au.play().then(refresh, () => {}); removeEventListener('pointerdown', unlock); removeEventListener('keydown', unlock); };
+    addEventListener('pointerdown', unlock); addEventListener('keydown', unlock);
+    $('mPlay').onclick = e => {
+      e.stopPropagation();
+      wantOn = au.paused ? true : false; localStorage.setItem('zho-music', wantOn ? 'on' : 'off');
+      if (wantOn) au.play().then(refresh, refresh); else au.pause();
+    };
+    $('mNext').onclick = () => { wantOn = true; localStorage.setItem('zho-music', 'on'); nextTrack(); };
+    $('mVol').oninput = () => { au.volume = $('mVol').value / 100; localStorage.setItem('zho-vol', $('mVol').value); };
+  }
+}
+initMedia();
+</script>
+</body>
+</html>
